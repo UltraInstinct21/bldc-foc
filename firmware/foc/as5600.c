@@ -7,15 +7,18 @@
  * 0.29-2.2 ms slow-filter delay. Filter in software at the control rate.
  */
 #include "as5600.h"
+#include "board.h"
 #include <string.h>
 
 #define AS5600_I2C_TIMEOUT_MS   20u
+#define AS5600_MAX_CONSEC_ERR   5u
 
 static I2C_HandleTypeDef *s_i2c;
 static uint8_t  s_buf[2];
 static volatile uint16_t s_raw;
 static volatile uint32_t s_seq;
 static volatile uint32_t s_err;
+static volatile uint32_t s_consec_err;
 static volatile uint8_t  s_busy;
 static uint8_t  s_status;
 
@@ -23,12 +26,13 @@ int AS5600_Init(I2C_HandleTypeDef *hi2c, uint8_t *status_out)
 {
     uint8_t st = 0u;
 
-    s_i2c     = hi2c;
-    s_busy    = 0u;
-    s_err     = 0u;
-    s_seq     = 0u;
-    s_raw     = 0u;
-    s_status  = 0u;
+    s_i2c        = hi2c;
+    s_busy       = 0u;
+    s_err        = 0u;
+    s_consec_err = 0u;
+    s_seq        = 0u;
+    s_raw        = 0u;
+    s_status     = 0u;
 
     if (s_i2c == NULL)
     {
@@ -54,9 +58,54 @@ int AS5600_Init(I2C_HandleTypeDef *hi2c, uint8_t *status_out)
     return -2;
 }
 
+void AS5600_RecoverBus(void)
+{
+    GPIO_InitTypeDef g = {0};
+
+    if (s_i2c == NULL)
+    {
+        return;
+    }
+
+    /* 1. Abort any pending transfer and de-initialize peripheral */
+    (void)HAL_I2C_DeInit(s_i2c);
+
+    /* 2. Configure SCL (PA15) as GPIO output open-drain to clock stuck slave */
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+    g.Pin   = GPIO_PIN_15;
+    g.Mode  = GPIO_MODE_OUTPUT_OD;
+    g.Pull  = GPIO_PULLUP;
+    g.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(GPIOA, &g);
+
+    for (int i = 0; i < 9; i++)
+    {
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+        for (volatile int d = 0; d < 200; d++) { __NOP(); }
+        HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+        for (volatile int d = 0; d < 200; d++) { __NOP(); }
+    }
+
+    /* 3. Re-initialize I2C1 and restore pin multiplexing */
+    Board_InitI2C1();
+    s_busy = 0u;
+    s_consec_err = 0u;
+}
+
 int AS5600_StartRead(void)
 {
-    if ((s_i2c == NULL) || (s_busy != 0u))
+    if (s_i2c == NULL)
+    {
+        return -1;
+    }
+
+    /* Auto-recover if consecutive errors exceed threshold (e.g. from PWM noise) */
+    if (s_consec_err >= AS5600_MAX_CONSEC_ERR)
+    {
+        AS5600_RecoverBus();
+    }
+
+    if (s_busy != 0u)
     {
         return -1;
     }
@@ -68,6 +117,7 @@ int AS5600_StartRead(void)
     {
         s_busy = 0u;
         s_err++;
+        s_consec_err++;
         return -2;
     }
 
@@ -79,11 +129,13 @@ void AS5600_RxComplete(void)
     s_raw = (uint16_t)(((uint16_t)(s_buf[0] & 0x0Fu) << 8) | (uint16_t)s_buf[1]);
     s_seq++;
     s_busy = 0u;
+    s_consec_err = 0u;
 }
 
 void AS5600_Error(void)
 {
     s_err++;
+    s_consec_err++;
     s_busy = 0u;
 }
 
@@ -105,6 +157,11 @@ uint8_t AS5600_GetStatus(void)
 uint32_t AS5600_GetErrorCount(void)
 {
     return s_err;
+}
+
+uint32_t AS5600_GetConsecutiveErrors(void)
+{
+    return s_consec_err;
 }
 
 int AS5600_ReadBlocking(uint16_t *raw, uint32_t timeout_ms)

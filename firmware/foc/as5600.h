@@ -47,6 +47,10 @@ uint16_t AS5600_GetRaw(void);
 uint32_t AS5600_GetSequence(void);
 uint8_t  AS5600_GetStatus(void);
 uint32_t AS5600_GetErrorCount(void);
+uint32_t AS5600_GetConsecutiveErrors(void);
+
+/* Active I2C bus recovery sequence (9 clock pulses on PA15 SCL + re-init). */
+void     AS5600_RecoverBus(void);
 
 /* Blocking single read, used only during bring-up / calibration. */
 int      AS5600_ReadBlocking(uint16_t *raw, uint32_t timeout_ms);

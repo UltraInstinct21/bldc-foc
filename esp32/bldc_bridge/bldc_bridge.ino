@@ -51,7 +51,7 @@ static struct {
 static void rx_feed(uint8_t b) {
   switch(rx.state) {
     case ST_SYNC0:  if(b==ESPL_SYNC0) rx.state=ST_SYNC1; break;
-    case ST_SYNC1:  rx.state = (b==ESPL_SYNC1)?ST_TYPE:ST_SYNC0; break;
+    case ST_SYNC1:  rx.state = (b==ESPL_SYNC1) ? ST_TYPE : ((b==ESPL_SYNC0) ? ST_SYNC1 : ST_SYNC0); break;
     case ST_TYPE:   rx.hdr[0]=rx.type=b; rx.state=ST_SEQ; break;
     case ST_SEQ:    rx.hdr[1]=rx.seq=b;  rx.state=ST_LEN; break;
     case ST_LEN:
@@ -159,6 +159,7 @@ void setup() {
   Serial.println("\r\n=== BLDC-FOC ESP32 Bridge ===");
 
   Serial2.begin(STM_UART_BAUD, SERIAL_8N1, STM_UART_RX, STM_UART_TX);
+  while (Serial2.available()) { (void)Serial2.read(); } // flush any boot/debug text
   Serial.printf("UART2 at %d baud: RX=GPIO%d TX=GPIO%d\n",
                 STM_UART_BAUD, STM_UART_RX, STM_UART_TX);
 

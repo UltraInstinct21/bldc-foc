@@ -79,8 +79,9 @@ int main(void)
             EspLink_SendTlm(&tlm, seq);
         }
 
-        /* Periodic synthetic transmission if idle */
-        if ((now - t_tlm) >= TLM_PERIOD_MS)
+        /* Periodic synthetic transmission only when link is idle (no active CMD polling)
+         * to prevent collisions on the single-wire half-duplex line */
+        if (!EspLink_IsAlive(250u) && ((now - t_tlm) >= TLM_PERIOD_MS))
         {
             t_tlm = now;
             counter++;

@@ -220,8 +220,8 @@ uint8_t FOC_IsEnabled(void)
 
 void FOC_SetCurrentRef(float id, float iq)
 {
-    /* Circular current limit. The DRV8316 CSA (0.15 V/A) and the motor are
-     * both only good to ~7 A peak, so clamp the dq vector magnitude. */
+    /* Circular current limit. The DRV8316CT CSA (0.3 V/A) is linear to
+     * +/-4.6 A peak, so clamp the dq vector magnitude to FOC_I_MAX (4.0 A). */
     float m2 = (id * id) + (iq * iq);
 
     if (m2 > (FOC_I_MAX * FOC_I_MAX))

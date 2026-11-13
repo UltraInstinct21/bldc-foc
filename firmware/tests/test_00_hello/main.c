@@ -6,7 +6,7 @@
  *   - 3V3 regulator and MCU boot
  *   - 170 MHz clock tree (HSI16 -> PLL)
  *   - USART1 TX on PB6 / J7.1 (115200 8N1)
- *   - nSLEEP / DRVOFF / nSCS / nFAULT pin states
+ *   - nSLEEP / DRVOFF / nFAULT pin states (hardware strapped DRV8316CT)
  *
  * Expected UART output:
  *   banner, clock frequencies, UID, then a 1 Hz status line.
@@ -23,7 +23,7 @@ int main(void)
     DBG_Puts("\r\n\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Puts(" bldc_control_final_v6  |  test_00_hello\r\n");
-    DBG_Puts(" STM32G431CBT6 + DRV8316R\r\n");
+    DBG_Puts(" STM32G431CBT6 + DRV8316CT (Hardware Mode)\r\n");
     DBG_Puts("==================================================\r\n");
 
     DBG_Printf("build      : %s %s\r\n", __DATE__, __TIME__);

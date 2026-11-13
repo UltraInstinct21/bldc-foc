@@ -269,9 +269,11 @@ int main(void)
         stop_motor("encoder produced no valid samples");
     }
 
-    /* Reconfigure USART1 to half-duplex link mode */
+    DBG_Puts("Switching USART1 to 230400 baud half-duplex link...\r\n");
+    DBG_Puts("Waiting for ENABLE command from web UI...\r\n");
+
+    /* Reconfigure USART1 to half-duplex link mode (no further debug prints after this) */
     EspLink_Init(LINK_UART_BAUD);
-    DBG_Puts("ESP32 link ready. Waiting for ENABLE command from web UI...\r\n");
 
     t_prev   = Board_Millis();
     t_print  = t_prev;

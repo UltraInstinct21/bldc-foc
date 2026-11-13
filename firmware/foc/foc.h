@@ -61,12 +61,14 @@
 
 /* Peak current limit, A (dq vector magnitude).
  *
- * The motor is rated 7.07 A peak (7.6 A peak hot) and the DRV8316 CSA at
- * 0.15 V/A is only linear to +/-8 A. 7.0 A gives rated torque (0.50 Nm)
- * with a little margin; do not raise this above ~7.5 A. */
+ * DRV8316CT GAIN pin is strapped Hi-Z (0.3 V/A), giving VREF/2 = 1.65 V mid-rail.
+ * Linear CSA output is 0.15 V to 3.15 V (swing = +/-1.5 V).
+ * Maximum linear phase current = 1.5 V / 0.3 V/A = +/-4.6 A.
+ * To prevent ADC saturation, clipping, and integrator windup, clamp to 4.0 A. */
 #ifndef FOC_I_MAX
-#define FOC_I_MAX           7.0f
+#define FOC_I_MAX           4.0f
 #endif
+#define FOC_I_MAX_HARD_CEILING 4.5f
 
 /* Maximum modulation for the open-loop alignment vector.
  *
