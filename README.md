@@ -57,5 +57,8 @@ Full build and flash details are in [`firmware/README.md`](firmware/README.md).
 
 ## License
 
-No license has been chosen yet. Treat the code as all rights reserved until
-one is added.
+MIT. See [`LICENSE`](LICENSE).
+
+The bundled ST HAL and CMSIS sources under `firmware/Drivers/` keep their own
+ST license terms; see `firmware/Drivers/CMSIS/LICENSE.txt` and the headers in
+the HAL sources.
