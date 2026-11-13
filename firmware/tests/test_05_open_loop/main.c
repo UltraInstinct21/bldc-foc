@@ -3,7 +3,7 @@
  * @brief   test_05_open_loop — independent open-loop V/f motor spin.
  *
  * Covers the whole power path without the FOC current loop:
- *   - SPI DRV8316 configuration (6x, 200 V/us, 0.15 V/A)
+ *   - DRV8316CT hardware configuration (6x, 125 V/us, 0.3 V/A)
  *   - nSLEEP / DRVOFF sequencing
  *   - TIM1 three-phase sine PWM
  *   - motor phases and the optional AS5600 feedback

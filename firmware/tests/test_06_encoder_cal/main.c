@@ -4,7 +4,7 @@
  *
  * Covers:
  *   - AS5600 + I2C1
- *   - DRV8316 + SPI
+ *   - DRV8316CT (Hardware Mode)
  *   - TIM1 open-loop alignment vector
  *   - Encoder_Calibrate() sign/offset measurement and flash persistence
  *
