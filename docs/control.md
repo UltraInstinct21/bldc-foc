@@ -134,9 +134,8 @@ Three ADC ranks at 6.5 cycles take about 1.35 us, leaving about 1.2 us of
 margin. The low-side FETs have also been on for about 2.5 us before the
 trigger, which covers the CSA settling time.
 
-This only works with **SLEW = 200 V/us**. At the 25 V/us reset default the
-dead time is 1.8 to 3.4 us and the same window is 0.7 to 2.3 us, which is not
-enough. `drv8316.c` must configure the driver before the bridge is enabled.
+This only works with the **125 V/us** slew rate (hardware strapped with 47 kΩ to AVDD).
+The board layer initializes and clears driver faults before the bridge is enabled.
 
 If more voltage or speed is needed later:
 

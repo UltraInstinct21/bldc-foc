@@ -18,7 +18,6 @@
 #include "debug.h"
 #include "as5600.h"
 #include "encoder.h"
-#include "drv8316.h"
 
 #include <math.h>
 

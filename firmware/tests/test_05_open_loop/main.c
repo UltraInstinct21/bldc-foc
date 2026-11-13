@@ -18,7 +18,6 @@
  */
 #include "board.h"
 #include "debug.h"
-#include "drv8316.h"
 #include "as5600.h"
 
 #include <math.h>

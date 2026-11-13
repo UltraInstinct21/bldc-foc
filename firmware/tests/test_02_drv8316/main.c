@@ -16,7 +16,6 @@
  */
 #include "board.h"
 #include "debug.h"
-#include "drv8316.h"
 
 int main(void)
 {

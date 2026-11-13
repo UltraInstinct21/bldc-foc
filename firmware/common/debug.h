@@ -1,17 +1,15 @@
 /**
  * @file    debug.h
- * @brief   Tiny blocking UART console on USART1 TX (PB6 / J7.1).
+ * @brief   Console I/O redirected to standard stdio (printf/fputs/putchar).
  */
 #ifndef DEBUG_H
 #define DEBUG_H
 
-#include <stdint.h>
+#include <stdio.h>
 
-/* Board_Init() already configures USART1. Kept for symmetry. */
-void DBG_Init(void);
-
-void DBG_PutChar(char c);
-void DBG_Puts(const char *s);
-void DBG_Printf(const char *fmt, ...);
+#define DBG_Init()          ((void)0)
+#define DBG_Printf          printf
+#define DBG_Puts(s)         fputs((s), stdout)
+#define DBG_PutChar(c)      putchar(c)
 
 #endif /* DEBUG_H */

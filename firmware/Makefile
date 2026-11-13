@@ -41,24 +41,21 @@ endif
 
 ifeq ($(APP),foc)
 APP_DIR   := foc
-APP_EXTRA := foc/foc.c foc/encoder.c foc/as5600.c foc/drv8316.c
+APP_EXTRA := foc/foc.c foc/encoder.c foc/as5600.c
 else ifeq ($(APP),foc_esp)
 APP_DIR   := foc_esp
-APP_EXTRA := foc/foc.c foc/encoder.c foc/as5600.c foc/drv8316.c foc_esp/esp_link.c
+APP_EXTRA := foc/foc.c foc/encoder.c foc/as5600.c foc_esp/esp_link.c
 else
 APP_DIR   := tests/$(APP)
 # Modules a given test needs from foc/ and foc_esp/
 ifeq ($(APP),test_01_as5600)
 APP_EXTRA := foc/as5600.c
 endif
-ifeq ($(APP),test_02_drv8316)
-APP_EXTRA := foc/drv8316.c
-endif
 ifeq ($(APP),test_05_open_loop)
-APP_EXTRA := foc/as5600.c foc/drv8316.c
+APP_EXTRA := foc/as5600.c
 endif
 ifeq ($(APP),test_06_encoder_cal)
-APP_EXTRA := foc/as5600.c foc/encoder.c foc/drv8316.c
+APP_EXTRA := foc/as5600.c foc/encoder.c
 endif
 ifeq ($(APP),test_07_esp_link)
 APP_EXTRA := foc_esp/esp_link.c
@@ -77,10 +74,8 @@ LDSCRIPT := common/STM32G431CBTX_FLASH.ld
 COMMON_SRCS := \
     common/startup_stm32g431cbtx.s \
     common/system_stm32g4xx.c \
-    common/syscalls.c \
     common/sysmem.c \
     common/board.c \
-    common/debug.c \
     common/stm32g4xx_hal_msp.c \
     common/stm32g4xx_it.c
 

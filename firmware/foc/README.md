@@ -14,7 +14,6 @@ make APP=foc flash
 | `foc.c` / `foc.h` | Clarke, Park, PI, inverse Park, SVPWM, TIM1 output |
 | `encoder.c` / `encoder.h` | Angle tracking, speed, offset calibration, flash record |
 | `as5600.c` / `as5600.h` | Non-blocking AS5600 driver on I2C1 |
-| `drv8316.c` / `drv8316.h` | DRV8316CT hardware-mode wake, fault monitoring & clearing |
 
 `foc.c` depends on `encoder.c`. The other modules are independent.
 For ESP32 WiFi control and telemetry, see the separate `../foc_esp` folder.

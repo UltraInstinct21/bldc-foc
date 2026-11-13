@@ -2,9 +2,8 @@
  * @file    stm32g4xx_it.c
  * @brief   Cortex-M4 and peripheral interrupt handlers.
  */
-#include "main.h"
-#include "stm32g4xx_it.h"
 #include "board.h"
+#include "stm32g4xx_it.h"
 
 /* ---- Cortex-M4 exceptions ---------------------------------------------- */
 void NMI_Handler(void)

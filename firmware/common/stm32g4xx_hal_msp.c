@@ -17,7 +17,6 @@
  *
  * The DRV8316CT is strapped for hardware mode, so there is no SPI pin map.
  */
-#include "main.h"
 #include "board.h"
 
 void HAL_MspInit(void)

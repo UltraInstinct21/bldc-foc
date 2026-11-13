@@ -7,8 +7,6 @@
  * board-level helpers the tests use.
  */
 #include "board.h"
-#include "debug.h"
-#include "main.h"
 
 /* HAL handles, shared by every app. */
 UART_HandleTypeDef huart1;
@@ -356,6 +354,49 @@ uint8_t Board_DrvFault(void)
 {
     return (HAL_GPIO_ReadPin(DRV_NFAULT_PORT, DRV_NFAULT_PIN) == GPIO_PIN_RESET) ? 1u : 0u;
 }
+
+int Board_DrvClearFault(void)
+{
+    Board_DrvSleep();
+    for (volatile uint32_t i = 0u; i < 1300u; i++)
+    {
+        __NOP();
+    }
+    Board_DrvWake();
+    Board_DelayMs(2u);
+
+    return (Board_DrvFault() != 0u) ? -1 : 0;
+}
+
+int Board_DrvInit(void)
+{
+    Board_DelayMs(2u);
+    if (Board_DrvFault() == 0u)
+    {
+        return 0;
+    }
+    return Board_DrvClearFault();
+}
+
+int _write(int file, char *ptr, int len)
+{
+    (void)file;
+    if (len > 0)
+    {
+        (void)HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 100u);
+    }
+    return len;
+}
+
+/* Minimal newlib syscall stubs to replace 176-line syscalls.c */
+int  _close(int file) { (void)file; return -1; }
+int  _fstat(int file, void *st) { (void)file; (void)st; return 0; }
+int  _isatty(int file) { (void)file; return 1; }
+int  _lseek(int file, int ptr, int dir) { (void)file; (void)ptr; (void)dir; return 0; }
+int  _read(int file, char *ptr, int len) { (void)file; (void)ptr; (void)len; return 0; }
+int  _getpid(void) { return 1; }
+int  _kill(int pid, int sig) { (void)pid; (void)sig; return -1; }
+void _exit(int status) { (void)status; while (1) {} }
 
 uint32_t Board_Millis(void)
 {

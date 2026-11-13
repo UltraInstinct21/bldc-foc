@@ -34,6 +34,12 @@
 #define DRV_DRVOFF_PIN      GPIO_PIN_7
 #define DRV_NFAULT_PORT     GPIOA
 #define DRV_NFAULT_PIN      GPIO_PIN_6
+#define DRV8316_CSA_V_PER_A 0.3f
+
+/* Backward compatibility aliases */
+#define DRV8316_Init        Board_DrvInit
+#define DRV8316_ClearFault  Board_DrvClearFault
+#define DRV8316_Fault       Board_DrvFault
 
 /* ---- debug and ESP32 link: USART1 on PB6 (J7.1) -------------------------
  * Normal debug output is TX-only, push-pull. Board_InitUsart1Link() switches
@@ -95,10 +101,13 @@ void    Board_DrvWake(void);
 void    Board_DrvOutputEnable(void);
 void    Board_DrvOutputDisable(void);
 uint8_t Board_DrvFault(void);           /* 1 = nFAULT low (fault) */
+int     Board_DrvClearFault(void);
+int     Board_DrvInit(void);
 
 /* ---- misc --------------------------------------------------------------- */
 uint32_t Board_Millis(void);
 void     Board_DelayMs(uint32_t ms);
 void     Error_Handler(void);
+void     HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 #endif /* BOARD_H */

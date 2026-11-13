@@ -7,15 +7,14 @@ bridge; that is always explicit in the app.
 
 | File | Role |
 |---|---|
-| `board.c` / `board.h` | Clock, safe GPIO, peripheral init, PWM, DRV helpers, USART1 link |
-| `debug.c` / `debug.h` | Blocking UART console on USART1 TX |
-| `main.h` | Shared prototypes |
+| `board.c` / `board.h` | Clock, safe GPIO, peripheral init, PWM, DRV helpers, USART1 link, newlib syscalls |
+| `debug.h` | Direct stdio redirection (printf/fputs/putchar) to USART1 |
 | `stm32g4xx_hal_msp.c` | Peripheral clocks and pin alternate functions |
 | `stm32g4xx_it.c` | Exception and peripheral interrupt handlers (DMA1, I2C1, USART1) |
-| `stm32g4xx_hal_conf.h` | HAL module selection |
+| `stm32g4xx_hal_conf.h` | Lean HAL module configuration |
 | `system_stm32g4xx.c` | CMSIS system init and FPU enable |
 | `startup_stm32g431cbtx.s` | Vector table and reset handler |
-| `syscalls.c`, `sysmem.c` | Newlib stubs |
+| `sysmem.c` | Newlib heap allocator (_sbrk) |
 | `STM32G431CBTX_FLASH.ld` | Linker script, flash limited to 126 KB |
 
 ## Boot state

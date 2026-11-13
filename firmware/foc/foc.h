@@ -51,8 +51,8 @@
  * of low-side window after the counter peak. Three ADC ranks at
  * 6.5 + 12.5 cycles take ~1.35 us, so there is ~1.2 us of margin.
  *
- * This only works because drv8316.c sets SLEW = 200 V/us (dead time
- * 0.5-0.75 us instead of 1.8-3.4 us at the 25 V/us default).
+ * This works with the hardware SLEW pin strapped with 47k to AVDD
+ * (125 V/us slew rate, giving low dead time margin).
  */
 #ifndef FOC_VMAX_FRAC
 #define FOC_VMAX_FRAC       0.45f
