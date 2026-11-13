@@ -5,15 +5,15 @@ pass.
 
 ## Before power
 
-1. Inspect the board for solder bridges, especially around the DRV8316R and
+1. Inspect the board for solder bridges, especially around the DRV8316CT and
    the shunt traces.
 2. Verify the 3.3 V rail with the board unpowered from the motor supply, then
    with the supply current-limited to about 100 mA.
 3. Confirm the debug console on J7 pin 1 (PB6) at 115200 8N1.
 4. Connect the motor to J2 only when a test needs it.
 
-The firmware keeps the bridge safe at boot: nSLEEP low, DRVOFF high, nSCS
-high. No test enables the power stage unless it says so.
+The firmware keeps the bridge safe at boot: nSLEEP low, DRVOFF high. No test enables
+the power stage unless it says so.
 
 ## Equipment
 
@@ -42,13 +42,15 @@ Run each command from `firmware/`.
 | Step | Command | Pass criterion |
 |---|---|---|
 | 1 | `make APP=test_00_hello flash` | Banner and 1 Hz status at 170 MHz |
-| 2 | `make APP=test_02_drv8316_spi flash` | `rc=0`, `CTRL_2 = 0x78` |
+| 2 | `make APP=test_02_drv8316 flash` | `rc=0`, DRVOFF and nSLEEP toggle, nFAULT = 1 |
 | 3 | `make APP=test_01_as5600 flash` | Magnet detected, RAW sweeps 0 to 4095 per turn |
 | 4 | `make APP=test_03_pwm flash` | 20 kHz, 120 degrees, about 750 ns dead time |
 | 5 | `make APP=test_04_current_sense flash` | About 1.65 V and 0 A on all phases |
 | 6 | `make APP=test_05_open_loop flash` | Rotor aligns, then turns to 20 Hz electrical |
 | 7 | `make APP=test_06_encoder_cal flash` | `rc=0`, sign and offset printed, valid set |
-| 8 | `make APP=foc flash` | Closed-loop run |
+| 8 | `make APP=test_07_esp_link flash` | Half-duplex UART verification, echoes frames, 50 Hz synthetic telemetry |
+| 9 | `make APP=foc flash` | Autonomous closed-loop run |
+| 10 | `make APP=foc_esp flash` | Command-driven closed-loop run with ESP32 WiFi web telemetry |
 
 Detailed expected output for each test is in
 [`firmware/tests/README.md`](../firmware/tests/README.md).
