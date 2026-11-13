@@ -1,6 +1,6 @@
 # FOC application
 
-Final application for the board. Build and flash from the parent folder:
+Final standalone application for the board. Build and flash from the `firmware/` folder:
 
 ```sh
 make APP=foc flash
@@ -14,15 +14,16 @@ make APP=foc flash
 | `foc.c` / `foc.h` | Clarke, Park, PI, inverse Park, SVPWM, TIM1 output |
 | `encoder.c` / `encoder.h` | Angle tracking, speed, offset calibration, flash record |
 | `as5600.c` / `as5600.h` | Non-blocking AS5600 driver on I2C1 |
-| `drv8316.c` / `drv8316.h` | SPI configuration and fault access |
+| `drv8316.c` / `drv8316.h` | DRV8316CT hardware-mode wake, fault monitoring & clearing |
 
 `foc.c` depends on `encoder.c`. The other modules are independent.
+For ESP32 WiFi control and telemetry, see the separate `../foc_esp` folder.
 
 ## Boot sequence
 
 1. `Board_Init()`, I2C1, AS5600, `Encoder_Init()`.
-2. SPI1, DRV wake, `DRV8316_Init()`. The driver must be configured before any
-   PWM is applied because it sets SLEW to 200 V/us.
+2. DRV wake, `DRV8316_Init()`. The DRV8316CT is strapped in hardware mode
+   (MODE=6x PWM, GAIN=0.3 V/A, SLEW=125 V/us). No SPI initialization is needed.
 3. TIM1, ADC trigger, `FOC_Init()`, ADC1.
 4. If no valid calibration exists, run `Encoder_Calibrate()` with
    `FOC_ApplyOpenLoopVector` and save the result to flash.
@@ -71,5 +72,5 @@ On any stop the bridge is disabled and the app idles. Reset to run again.
 
 See [`../../docs/control.md`](../../docs/control.md) for the sampling window,
 tuning, protections and known limits. In short: the AS5600 is good to about
-1000 rpm, there is no Vbus sense, and the current-sense range is nearly fully
-used at rated torque.
+1000 rpm, there is no Vbus sense, and the 0.3 V/A CSA gain limits linear
+current measurement to ±4.6 A (peak current limit 4.0 A in firmware).

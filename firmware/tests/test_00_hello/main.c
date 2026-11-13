@@ -39,7 +39,6 @@ int main(void)
     DBG_Puts("\r\nControl pins:\r\n");
     DBG_Puts("  nSLEEP = PC13 [expected 0 = DRV asleep]\r\n");
     DBG_Puts("  DRVOFF = PA7  [expected 1 = outputs off]\r\n");
-    DBG_Puts("  nSCS   = PA4  [expected 1 = deselected]\r\n");
     DBG_Puts("  nFAULT = PA6  [expected 1 = no fault]\r\n");
 
     DBG_Puts("\r\nIf you can read this, power, clock and UART are good.\r\n");
@@ -47,11 +46,10 @@ int main(void)
 
     for (;;)
     {
-        DBG_Printf("t=%6lu ms  nSLEEP=%u  DRVOFF=%u  nSCS=%u  nFAULT=%u\r\n",
+        DBG_Printf("t=%6lu ms  nSLEEP=%u  DRVOFF=%u  nFAULT=%u\r\n",
                    (unsigned long)Board_Millis(),
                    (unsigned)HAL_GPIO_ReadPin(DRV_NSLEEP_PORT, DRV_NSLEEP_PIN),
                    (unsigned)HAL_GPIO_ReadPin(DRV_DRVOFF_PORT, DRV_DRVOFF_PIN),
-                   (unsigned)HAL_GPIO_ReadPin(DRV_NSCS_PORT, DRV_NSCS_PIN),
                    (unsigned)HAL_GPIO_ReadPin(DRV_NFAULT_PORT, DRV_NFAULT_PIN));
         Board_DelayMs(1000u);
     }

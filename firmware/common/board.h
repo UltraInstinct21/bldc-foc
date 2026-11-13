@@ -17,6 +17,9 @@
  *
  * The AS5600 is wired to the J6/J7 pins:
  *   SCL = PA15 (J6.2), SDA = PB7 (J7.2), VCC = J6.1, GND = J6.3.
+ *
+ * The DRV8316CT is strapped for 6x PWM and 0.3 V/A. It has no SPI link, so
+ * the board layer only drives nSLEEP and DRVOFF and reads nFAULT.
  */
 #ifndef BOARD_H
 #define BOARD_H
@@ -31,11 +34,13 @@
 #define DRV_DRVOFF_PIN      GPIO_PIN_7
 #define DRV_NFAULT_PORT     GPIOA
 #define DRV_NFAULT_PIN      GPIO_PIN_6
-#define DRV_NSCS_PORT       GPIOA
-#define DRV_NSCS_PIN        GPIO_PIN_4
 
-/* ---- debug UART: USART1 TX-only on PB6 (J7.1) --------------------------- */
+/* ---- debug and ESP32 link: USART1 on PB6 (J7.1) -------------------------
+ * Normal debug output is TX-only, push-pull. Board_InitUsart1Link() switches
+ * the same pin to half-duplex open-drain for the ESP32. PB7 stays free for
+ * the encoder SDA. */
 #define DBG_UART_BAUD       115200u
+#define LINK_UART_BAUD      230400u
 
 /* ---- AS5600 encoder ----------------------------------------------------- */
 #define ENC_SCL_PORT        GPIOA
@@ -54,7 +59,6 @@
 /* ---- shared HAL handles ------------------------------------------------- */
 extern UART_HandleTypeDef huart1;
 extern I2C_HandleTypeDef  hi2c1;
-extern SPI_HandleTypeDef  hspi1;
 extern TIM_HandleTypeDef  htim1;
 extern ADC_HandleTypeDef  hadc1;
 extern DMA_HandleTypeDef  hdma_adc1;
@@ -66,8 +70,12 @@ extern DMA_HandleTypeDef  hdma_adc1;
  */
 void Board_Init(void);
 
+/* Switch USART1 to half-duplex open-drain on PB6 for the ESP32 link.
+ * Call once at startup, after Board_Init(). Requires a 4.7k pull-up on
+ * the line; the debug console keeps working on the same pin. */
+void Board_InitUsart1Link(uint32_t baud);
+
 void Board_InitI2C1(void);              /* PA15/PB7, 400 kHz */
-void Board_InitSPI1(void);              /* PB3/PB4/PB5, 16-bit mode 1 */
 void Board_InitTim1(uint32_t arr);      /* centre-aligned PWM, 3 + 3 outputs */
 void Board_InitAdc1(void);              /* PA0/PA1/PA2, TIM1_TRGO, DMA */
 

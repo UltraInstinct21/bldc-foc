@@ -46,7 +46,6 @@ int main(void)
 
     Board_Init();
     Board_InitI2C1();
-    Board_InitSPI1();
     Board_InitTim1(PWM_ARR_20KHZ);
     Board_Tim1StartPwm();
 
@@ -73,7 +72,7 @@ int main(void)
     Board_DrvWake();
     Board_DelayMs(5u);
 
-    if (DRV8316_Init(&hspi1, DRV_NSCS_PORT, DRV_NSCS_PIN) != 0)
+    if (DRV8316_Init() != 0)
     {
         DBG_Puts("DRV8316_Init failed - not enabling the bridge.\r\n");
         Board_Tim1StopPwm();

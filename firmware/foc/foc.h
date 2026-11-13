@@ -9,10 +9,11 @@
  *   24 V bus, 14 poles (7 pole pairs), 5 Arms / 7.07 A peak rated,
  *   Rph = 0.109 ohm, Ls = 68 uH, lambda_pm = 6.79 mVs, 2000 rpm, 0.50 Nm.
  *
- * The DRV8316R is configured over SPI by drv8316.c:
- *   6x PWM mode, CSA gain 0.15 V/A, VREF/2 = 1.65 V, SLEW = 200 V/us.
- * The fast slew is what makes 3-shunt sampling at 20 kHz possible at the
- * voltage needed for 2000 rpm (see FOC_VMAX_FRAC).
+ * The DRV8316CT is strapped in hardware mode:
+ *   6x PWM, CSA gain 0.3 V/A, VREF/2 = 1.65 V, SLEW = 125 V/us (47k strap).
+ * There is no SPI link; the firmware only drives nSLEEP and DRVOFF and
+ * reads nFAULT. The 0.3 V/A gain limits the linear current range to about
+ * +/-4.6 A, so FOC_I_MAX is set below that.
  *
  * PWM: TIM1 centre-aligned, 20 kHz, CH1/2/3 + CHxN.
  *   CH1 -> INHC -> OUTC
@@ -35,9 +36,9 @@
 #define FOC_PWM_ARR         4249u       /* 170 MHz / (2*(4249+1)) = 20 kHz */
 #define FOC_TS              (1.0f / 20000.0f)
 
-#define FOC_CSA_V_PER_A     0.15f       /* set in CONTROL_5 by drv8316.c */
+#define FOC_CSA_V_PER_A     0.3f        /* GAIN pin Hi-Z on DRV8316CT */
 #define FOC_ADC_LSB         (3.3f / 4095.0f)
-#define FOC_I_PER_COUNT     (FOC_ADC_LSB / FOC_CSA_V_PER_A)   /* ~5.37 mA */
+#define FOC_I_PER_COUNT     (FOC_ADC_LSB / FOC_CSA_V_PER_A)   /* ~2.69 mA */
 
 /* Maximum phase-voltage amplitude as a fraction of Vbus.
  *

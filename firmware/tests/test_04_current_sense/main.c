@@ -12,13 +12,13 @@
  * side is off and the shunts should read zero current -> ~1.65 V.
  *
  * Inject a known current (or enable the bridge in a separate test) to check
- * gain and sign. The DRV8316 CSA is 0.15 V/A with a VREF/2 offset.
- * FOC uses i_phase = -(V_SOx - offset)/0.15.
+ * gain and sign. The DRV8316CT CSA is 0.3 V/A with a VREF/2 offset.
+ * FOC uses i_phase = -(V_SOx - offset)/0.3.
  */
 #include "board.h"
 #include "debug.h"
 
-#define CSA_V_PER_A     0.15f
+#define CSA_V_PER_A     0.3f
 #define ADC_VREF        3.3f
 #define ADC_FULL        4095.0f
 

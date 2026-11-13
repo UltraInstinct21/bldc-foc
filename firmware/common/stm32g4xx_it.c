@@ -56,3 +56,8 @@ void I2C1_ER_IRQHandler(void)
 {
     HAL_I2C_ER_IRQHandler(&hi2c1);
 }
+
+void USART1_IRQHandler(void)
+{
+    HAL_UART_IRQHandler(&huart1);
+}

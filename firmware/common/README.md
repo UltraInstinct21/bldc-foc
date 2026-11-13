@@ -7,11 +7,11 @@ bridge; that is always explicit in the app.
 
 | File | Role |
 |---|---|
-| `board.c` / `board.h` | Clock, safe GPIO, peripheral init, PWM and DRV helpers |
+| `board.c` / `board.h` | Clock, safe GPIO, peripheral init, PWM, DRV helpers, USART1 link |
 | `debug.c` / `debug.h` | Blocking UART console on USART1 TX |
 | `main.h` | Shared prototypes |
 | `stm32g4xx_hal_msp.c` | Peripheral clocks and pin alternate functions |
-| `stm32g4xx_it.c` | Exception and peripheral interrupt handlers |
+| `stm32g4xx_it.c` | Exception and peripheral interrupt handlers (DMA1, I2C1, USART1) |
 | `stm32g4xx_hal_conf.h` | HAL module selection |
 | `system_stm32g4xx.c` | CMSIS system init and FPU enable |
 | `startup_stm32g431cbtx.s` | Vector table and reset handler |
@@ -27,11 +27,10 @@ bridge; that is always explicit in the app.
 3. Safe GPIO:
    - nSLEEP (PC13) low, driver asleep
    - DRVOFF (PA7) high, outputs Hi-Z
-   - nSCS (PA4) high, deselected
    - nFAULT (PA6) input with pull-up
 4. USART1 TX only on PB6 at 115200 8N1.
 
-PB7 is left for the encoder SDA. USART1 RX is not enabled.
+PB7 is left for the encoder SDA. USART1 RX is not enabled initially.
 
 ## Peripheral init
 
@@ -40,10 +39,14 @@ Call only what the application needs, in this order where relevant:
 ```c
 Board_Init();
 Board_InitI2C1();       /* PA15/PB7, 400 kHz */
-Board_InitSPI1();       /* PB3/PB4/PB5, 16-bit, mode 1, 5.3 MHz */
 Board_InitTim1(arr);    /* centre-aligned PWM, 3 complementary pairs */
 Board_Tim1AdcTrigger(); /* CH4/OC4REF -> TIM1_TRGO at the counter peak */
 Board_InitAdc1();       /* PA0/PA1/PA2, TIM1_TRGO, circular DMA */
+```
+
+For applications interfacing with the ESP32:
+```c
+Board_InitUsart1Link(230400); /* reconfigures PB6 to half-duplex open-drain */
 ```
 
 `Board_Tim1StartPwm()` sets all channels to 50 percent and starts them,
@@ -62,26 +65,23 @@ ch3 -> INHA -> phase A
 
 | Function | Effect |
 |---|---|
-| `Board_DrvSleep()` | nSLEEP low; resets all SPI registers |
+| `Board_DrvSleep()` | nSLEEP low |
 | `Board_DrvWake()` | nSLEEP high |
 | `Board_DrvOutputEnable()` | DRVOFF low, power stage active |
 | `Board_DrvOutputDisable()` | DRVOFF high, power stage Hi-Z |
 | `Board_DrvFault()` | 1 if nFAULT is low |
 
-After any sleep/wake cycle, call `DRV8316_Init()` again. Entering sleep resets
-the SPI configuration, including the slew rate.
+After any sleep/wake cycle, call `DRV8316_Init()`. The DRV8316CT is strapped
+for hardware mode (MODE=6x PWM, GAIN=0.3 V/A, SLEW=125 V/us).
 
-## Console
+## Console & Link
 
-`DBG_Puts()` and `DBG_Printf()` are blocking and TX only. They are safe in the
-main loop. Do not call them from the 20 kHz control interrupt.
+`DBG_Puts()` and `DBG_Printf()` are blocking and TX only on PB6. When
+`Board_InitUsart1Link()` is called, PB6 becomes half-duplex open-drain for
+the framed ESP32 protocol at 230400 baud.
 
 ## Interrupts
 
-`stm32g4xx_it.c` implements SysTick, DMA1 Channel 1 and I2C1 event/error.
-The ADC DMA interrupt is priority 1 and I2C1 is priority 5, so the control
-loop cannot be preempted by the encoder transfer.
-
-Applications install the HAL callbacks they need
-(`HAL_ADC_ConvCpltCallback`, `HAL_I2C_MemRxCpltCallback`,
-`HAL_I2C_ErrorCallback`).
+`stm32g4xx_it.c` implements SysTick, DMA1 Channel 1, I2C1 event/error, and USART1.
+The ADC DMA interrupt is priority 1, I2C1 is priority 5, and USART1 is priority 5,
+so the control loop cannot be preempted by the encoder or link transfers.

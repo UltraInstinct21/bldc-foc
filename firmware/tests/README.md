@@ -6,14 +6,16 @@ starts motor current unless the test says so.
 
 | Test | Covers | Safe with motor connected? |
 |---|---|---|
-| `test_00_hello` | 3V3, 170 MHz clock, USART1 TX (J7.1), nSLEEP/DRVOFF/nSCS/nFAULT | yes |
+| `test_00_hello` | 3V3, 170 MHz clock, USART1 TX (J7.1), nSLEEP/DRVOFF/nFAULT | yes |
 | `test_01_as5600` | I2C1 PA15/PB7, AS5600 STATUS + RAW_ANGLE, hand-turn speed | yes |
-| `test_02_drv8316_spi` | SPI1 PB3/4/5 + PA4, DRV register write/read, status bits | yes (DRVOFF high) |
+| `test_02_drv8316` | DRV8316CT hardware mode, nSLEEP wake, nFAULT monitor & clear | yes (DRVOFF high) |
 | `test_03_pwm` | TIM1 20 kHz, 3 complementary pairs, 120° modulation, dead time | yes (DRVOFF high) |
-| `test_04_current_sense` | ADC1 PA0/1/2, TIM1_TRGO, DMA, zero-current offsets | yes (MOE off) |
+| `test_04_current_sense` | ADC1 PA0/1/2, TIM1_TRGO, DMA, zero-current offsets (0.3 V/A) | yes (MOE off) |
 | `test_05_open_loop` | DRV enable sequence + V/f spin, optional encoder telemetry | **motor turns** |
 | `test_06_encoder_cal` | Encoder sign/offset calibration + flash record | **rotor twitches** |
-| `../foc` | closed-loop sensored FOC | **motor turns** |
+| `test_07_esp_link` | USART1 half-duplex (230400), frame CRC, ESP32 telemetry/command | yes (no motor needed) |
+| `../foc` | Closed-loop sensored FOC (standalone) | **motor turns** |
+| `../foc_esp` | Closed-loop sensored FOC + ESP32 WiFi telemetry & command | **motor turns (on enable)** |
 
 ## Expected output
 
@@ -23,7 +25,7 @@ starts motor current unless the test says so.
 bldc_control_final_v6  |  test_00_hello
 SYSCLK     : 170000000 Hz
 ...
-t=  1000 ms  nSLEEP=0  DRVOFF=1  nSCS=1  nFAULT=1
+t=  1000 ms  nSLEEP=0  DRVOFF=1  nFAULT=1
 ```
 
 If there is no output: check the 3V3 rail, the SWD connection, and that the
@@ -42,21 +44,26 @@ Turn the shaft by hand: `raw` must sweep 0..4095 exactly once per turn.
 
 No answer at 0x36: 4.7 k pull-ups missing, SDA on the wrong pin, or the
 module is not powered. PB7 is shared with USART1_RX; this firmware never
-enables RX.
+enables standard UART RX on PB7.
 
-### test_02_drv8316_spi
+### test_02_drv8316
 
 ```
+=== test_02_drv8316 (DRV8316CT Hardware Mode) ===
+Hardware straps: MODE=6x PWM, GAIN=0.3 V/A, SLEW=125 V/us, OCP=16 A
+DRVOFF is HIGH: motor outputs remain Hi-Z.
+
+Waking DRV8316CT (nSLEEP low -> high)...
 DRV8316_Init rc=0
-SPI link OK.
-CTRL_2 (0x04) = 0x78  [expect 0x78: 6x, 200 V/us]
-CTRL_5 (0x07) = 0x00  [expect 0x00: CSA 0.15 V/A]
-  IC_STATUS=0x00  STATUS_1=0x00  STATUS_2=0x00
+DRV8316CT power-up OK, nFAULT de-asserted.
+
+Monitoring nFAULT every 500 ms...
+
+t=  1000 ms  nFAULT=0 (OK)  DRVOFF=1 (safe)
 ```
 
-`rc=-2` means the SPI handle settings are wrong (must be 16-bit, mode 1,
-software NSS). `rc=-4` means the read-back did not match: check nSLEEP is
-high and PA4 is a GPIO, not SPI1_NSS.
+`rc=-1` means nFAULT is asserted. Check the VM supply voltage (4.5 to 35 V),
+GND connection, and ensure no short circuit exists on the phase outputs.
 
 ### test_03_pwm
 
@@ -77,7 +84,7 @@ Offsets: SOA=1.6500 V  SOB=1.6500 V  SOC=1.6500 V
 ```
 
 With the bridge off, current should be ~0 A and each SOx ~1.65 V. The test
-uses `i = (V - offset) / 0.15`; the FOC additionally flips the sign with
+uses `i = (V - offset) / 0.3`; the FOC additionally flips the sign with
 `FOC_CURRENT_SIGN = -1`.
 
 ### test_05_open_loop
@@ -107,8 +114,17 @@ Saved to the last flash page (0x0801F800).
 wiring, the magnet, and that the shaft is free. Do not raise `CAL_MOD`
 above 0.01–0.02; at standstill that is already ~2.2–4.4 A.
 
+### test_07_esp_link
+
+Verifies the half-duplex UART link on PB6 (J7.1) at 230400 baud with the external ESP32.
+No motor needed.
+
+Expected:
+- The ESP32 web dashboard shows **ONLINE** badge.
+- Encoder angle field counts upwards 0..4095.
+- Adjusting the `iq ref` slider on the web UI echoes back immediately in the dashboard.
+
 ## After the tests
 
-Run `make APP=foc flash`. The FOC app reuses the calibration from flash and
-skips calibration when the record is valid. To force a new calibration,
-flash `test_06_encoder_cal` again, or erase the last flash page.
+Run `make APP=foc flash` for standalone operation, or `make APP=foc_esp flash`
+to control the motor over WiFi via the ESP32 bridge.

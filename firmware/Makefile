@@ -1,12 +1,13 @@
 # ===========================================================================
-#  bldc_control_final_v6  --  STM32G431CBT6 + DRV8316R
+#  bldc_control_final_v6  --  STM32G431CBT6 + DRV8316CT
 #
 #  One target per application. Every app links the same common/ + HAL base
 #  and produces its own .elf/.bin/.hex, so it can be flashed on its own.
 #
 #  Examples:
 #      make APP=test_00_hello          build one app (default APP=foc)
-#      make APP=test_01_as5600 flash   build and flash one app
+#      make APP=test_07_esp_link       build ESP link test
+#      make APP=foc_esp flash          build and flash FOC + ESP app
 #      make apps                       build all apps
 #      make APP=foc size               show flash/RAM usage
 #      make clean
@@ -25,12 +26,14 @@ APP ?= foc
 
 APPS := test_00_hello \
         test_01_as5600 \
-        test_02_drv8316_spi \
+        test_02_drv8316 \
         test_03_pwm \
         test_04_current_sense \
         test_05_open_loop \
         test_06_encoder_cal \
-        foc
+        test_07_esp_link \
+        foc \
+        foc_esp
 
 ifeq ($(filter $(APP),$(APPS)),)
 $(error Unknown APP '$(APP)'. Valid apps: $(APPS))
@@ -39,13 +42,16 @@ endif
 ifeq ($(APP),foc)
 APP_DIR   := foc
 APP_EXTRA := foc/foc.c foc/encoder.c foc/as5600.c foc/drv8316.c
+else ifeq ($(APP),foc_esp)
+APP_DIR   := foc_esp
+APP_EXTRA := foc/foc.c foc/encoder.c foc/as5600.c foc/drv8316.c foc_esp/esp_link.c
 else
 APP_DIR   := tests/$(APP)
-# Modules a given test needs from foc/ (the test mains never include foc.c).
+# Modules a given test needs from foc/ and foc_esp/
 ifeq ($(APP),test_01_as5600)
 APP_EXTRA := foc/as5600.c
 endif
-ifeq ($(APP),test_02_drv8316_spi)
+ifeq ($(APP),test_02_drv8316)
 APP_EXTRA := foc/drv8316.c
 endif
 ifeq ($(APP),test_05_open_loop)
@@ -53,6 +59,9 @@ APP_EXTRA := foc/as5600.c foc/drv8316.c
 endif
 ifeq ($(APP),test_06_encoder_cal)
 APP_EXTRA := foc/as5600.c foc/encoder.c foc/drv8316.c
+endif
+ifeq ($(APP),test_07_esp_link)
+APP_EXTRA := foc_esp/esp_link.c
 endif
 endif
 
@@ -93,8 +102,6 @@ HAL_SRCS := \
     Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_pwr_ex.c \
     Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_rcc.c \
     Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_rcc_ex.c \
-    Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_spi.c \
-    Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_spi_ex.c \
     Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_tim.c \
     Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_tim_ex.c \
     Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal_uart.c \
@@ -109,7 +116,7 @@ DEPS := $(OBJS:.o=.d)
 # ---- flags ----------------------------------------------------------------
 MCU     := -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 DEFS    := -DSTM32G431xx -DUSE_HAL_DRIVER
-INCS    := -Icommon -Ifoc -I$(APP_DIR) \
+INCS    := -Icommon -Ifoc -Ifoc_esp -I$(APP_DIR) \
            -IDrivers/STM32G4xx_HAL_Driver/Inc \
            -IDrivers/STM32G4xx_HAL_Driver/Inc/Legacy \
            -IDrivers/CMSIS/Device/ST/STM32G4xx/Include \

@@ -4,7 +4,7 @@
  *
  * Chain:
  *   AS5600 (I2C1) -> encoder.c -> electrical angle
- *   ADC1 PA0/PA1/PA2 (SOA/SOB/SOC) -> foc.c -> TIM1 -> DRV8316R
+ *   ADC1 PA0/PA1/PA2 (SOA/SOB/SOC) -> foc.c -> TIM1 -> DRV8316CT
  *
  * First run: if no valid encoder calibration is stored, the app performs
  * the sign/offset calibration itself (rotor must be free) and writes it to
@@ -109,7 +109,7 @@ static void banner(void)
     DBG_Puts("\r\n\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Puts(" bldc_control_final_v6  |  foc\r\n");
-    DBG_Puts(" STM32G431CBT6 + DRV8316R + AS5600\r\n");
+    DBG_Puts(" STM32G431CBT6 + DRV8316CT + AS5600\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Printf("build : %s %s\r\n", __DATE__, __TIME__);
     DBG_Printf("SYSCLK: %lu Hz\r\n", (unsigned long)HAL_RCC_GetSysClockFreq());
@@ -140,15 +140,14 @@ int main(void)
     }
     Encoder_Init();
 
-    /* Gate driver. It powers up in 6x mode with the slow 25 V/us slew, so
-     * this must run before any PWM is applied. */
-    Board_InitSPI1();
+    /* Gate driver. The DRV8316CT is strapped in hardware mode (no SPI).
+     * Waking it sets nSLEEP high; check nFAULT after tWAKE. */
     Board_DrvWake();
     Board_DelayMs(5u);
-    if (DRV8316_Init(&hspi1, DRV_NSCS_PORT, DRV_NSCS_PIN) != 0)
+    if (DRV8316_Init() != 0)
     {
-        DBG_Puts("\r\nDRV8316 SPI configuration failed.\r\n");
-        DBG_Puts("Run test_02_drv8316_spi before using this app.\r\n");
+        DBG_Puts("\r\nDRV8316 fault after wake. Check VM and GND.\r\n");
+        DBG_Puts("Run test_02_drv8316 before using this app.\r\n");
         Error_Handler();
     }
 

@@ -62,7 +62,6 @@ int main(void)
     Board_Init();
     Board_InitTim1(PWM_ARR_20KHZ);
     Board_Tim1StartPwm();          /* 50 % first, MOE on, DRVOFF still high */
-    Board_InitSPI1();
 
     DBG_Puts("\r\n\r\n=== test_05_open_loop (V/f) ===\r\n");
 
@@ -86,13 +85,13 @@ int main(void)
     Board_DrvWake();
     Board_DelayMs(5u);
 
-    if (DRV8316_Init(&hspi1, DRV_NSCS_PORT, DRV_NSCS_PIN) != 0)
+    if (DRV8316_Init() != 0)
     {
         DBG_Puts("DRV8316_Init failed - not enabling the bridge.\r\n");
         Board_Tim1StopPwm();
         for (;;) { Board_DelayMs(1000u); }
     }
-    DBG_Puts("DRV8316 configured: 6x PWM, 200 V/us, CSA 0.15 V/A.\r\n");
+    DBG_Puts("DRV8316CT ready: 6x PWM, 125 V/us, CSA 0.3 V/A (hardware straps).\r\n");
 
     /* Align at electrical 0. */
     DBG_Printf("Aligning for %u ms at mod=%.3f...\r\n",
