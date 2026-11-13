@@ -1,0 +1,21 @@
+# Build artifacts
+build/
+*.o
+*.d
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+
+# Local reference documents. The datasheets and the motor design report are
+# kept outside the repository on purpose.
+*.pdf
+datasheets/
+
+# Editors and operating systems
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
