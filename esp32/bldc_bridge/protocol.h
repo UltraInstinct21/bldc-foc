@@ -9,6 +9,7 @@
 
 #define ESPL_CMD_FLAG_ENABLE       (1 << 0)
 #define ESPL_CMD_FLAG_CLEAR_FAULT  (1 << 1)
+#define ESPL_CMD_FLAG_ANGLE_VALID  (1 << 2)
 
 #define ESPL_TLM_FLAG_ENABLED      (1 << 0)
 #define ESPL_TLM_FLAG_FAULT        (1 << 1)
@@ -52,18 +53,26 @@ inline uint16_t crc16(const uint8_t *buf, int len) {
 }
 
 // ---- Build a CMD frame into out[], return frame length ---------------------
+// The angle uses the three reserved command bytes: bytes 7..8 are raw angle
+// (0..4095), byte 9 remains reserved. The frame length stays unchanged.
 inline int buildCmd(uint8_t *out, uint8_t seq,
                     bool enable, bool clear_fault,
-                    int16_t iq_ma, int16_t id_ma, uint16_t rpm_limit) {
+                    int16_t iq_ma, int16_t id_ma, uint16_t rpm_limit,
+                    uint16_t angle_raw) {
   uint8_t pl[ESPL_CMD_PAYLOAD_LEN] = {};
   pl[0] = (enable ? ESPL_CMD_FLAG_ENABLE : 0) |
            (clear_fault ? ESPL_CMD_FLAG_CLEAR_FAULT : 0);
+#if AS5600_ADC_ENABLED
+  pl[0] |= ESPL_CMD_FLAG_ANGLE_VALID;
+#endif
   pl[1] = (uint8_t)(iq_ma & 0xFF);
   pl[2] = (uint8_t)(iq_ma >> 8);
   pl[3] = (uint8_t)(id_ma & 0xFF);
   pl[4] = (uint8_t)(id_ma >> 8);
   pl[5] = (uint8_t)(rpm_limit & 0xFF);
   pl[6] = (uint8_t)(rpm_limit >> 8);
+  pl[7] = (uint8_t)(angle_raw & 0xFF);
+  pl[8] = (uint8_t)(angle_raw >> 8);
 
   out[0] = ESPL_SYNC0;
   out[1] = ESPL_SYNC1;

@@ -10,8 +10,20 @@
 #define STM_UART_TX     17
 #define STM_UART_BAUD   230400
 
-// Poll the STM32 at this rate (ms). Keep >= 20 to avoid collisions.
-#define POLL_INTERVAL_MS    20      // 50 Hz
+// The angle sample is transported with every command. Keep this at 5 ms or
+// slower: a command plus telemetry reply takes about 2 ms at 230400 baud.
+#define POLL_INTERVAL_MS    5       // 200 Hz
+
+// AS5600 OUT -> this ESP32 ADC pin. GPIO34 is input-only and ADC1-backed,
+// so WiFi activity cannot interfere with the conversion peripheral.
+#define AS5600_ADC_ENABLED 0
+#define AS5600_ADC_PIN      34
+#define AS5600_ADC_SAMPLES  4
+#define AS5600_ADC_FULL_SCALE_MV 3300
+// GPIO34 ADC input uses a 10k/100k divider so AS5600's 0..3.3 V output
+// remains inside the ESP32 ADC's usable range.
+#define AS5600_ADC_DIVIDER_TOP_KOHM    10
+#define AS5600_ADC_DIVIDER_BOTTOM_KOHM 100
 
 // If no web heartbeat for this long, zero iq and disable.
 #define WEB_DEADMAN_MS      2000

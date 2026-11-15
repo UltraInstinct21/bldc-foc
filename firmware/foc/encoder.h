@@ -38,12 +38,20 @@ typedef struct
     uint8_t  valid;
 } EncoderState;
 
+typedef int (*EncoderReadBlockingFn)(uint16_t *raw, uint32_t timeout_ms);
+
 /* Call once after MX_I2C1_Init() and AS5600_Init(). Loads calibration. */
 void  Encoder_Init(void);
 
 /* Feed a new raw sample (0..4095). Call from HAL_I2C_MemRxCpltCallback,
  * right after AS5600_RxComplete(). Runs in interrupt context. */
 void  Encoder_OnSample(uint16_t raw12);
+
+/* Use an externally transported sample instead of starting I2C reads. */
+void  Encoder_SetExternalSource(uint8_t enabled);
+
+/* Override the blocking reader used during calibration and priming. */
+void  Encoder_SetBlockingReader(EncoderReadBlockingFn reader);
 
 /* Call from the control ISR. Starts a new I2C read every N calls.
  * N = 5 gives 4 kHz at a 20 kHz control loop. */

@@ -8,8 +8,8 @@
  *
  * Hardware wiring:
  *   - J7.1 (PB6) is used as the ESP32 half-duplex link.
- *   - J7.2 (PB7) stays as AS5600 I2C SDA (unchanged).
- *   - J6.2 (PA15) stays as AS5600 I2C SCL (unchanged).
+ *   - AS5600 OUT is sampled by the ESP32 and transported in every CMD frame.
+ *   - PB7/PA15 are not used by this application.
  *
  * Wire the ESP32:
  *   ESP32 GPIO17 (TX) -> 1k resistor -> PB6 (J7.1)
@@ -35,6 +35,10 @@
 
 #include <math.h>
 #include <string.h>
+
+#ifndef ENCODER_SOURCE_ADC
+#define ENCODER_SOURCE_ADC 0
+#endif
 
 /* ---- tune here ---------------------------------------------------------- */
 #define APP_IQ_MAX_A        4.0f    /* hard limit: CSA saturates at ~4.6 A   */
@@ -65,6 +69,30 @@ static float    s_id_target  = 0.0f;
 static float    s_iq_cmd     = 0.0f;   /* ramped value */
 static uint16_t s_rpm_limit  = 0u;     /* 0 = use APP_RPM_LIMIT */
 
+#if ENCODER_SOURCE_ADC
+static int read_external_angle(uint16_t *raw, uint32_t timeout_ms)
+{
+    uint32_t start = Board_Millis();
+
+    while ((Board_Millis() - start) < timeout_ms)
+    {
+        EspCmd cmd;
+        uint8_t seq;
+
+        if (EspLink_TakeCmd(&cmd, &seq) &&
+            (cmd.flags & ESPL_CMD_FLAG_ANGLE_VALID) != 0u)
+        {
+            (void)seq;
+            *raw = cmd.angle_raw;
+            return 0;
+        }
+        Board_DelayMs(1u);
+    }
+
+    return -1;
+}
+#endif
+
 /* -------------------------------------------------------------------------- */
 /* HAL callbacks                                                              */
 /* -------------------------------------------------------------------------- */
@@ -81,7 +109,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
         s_iq_actual  = FOC_GetIq();
         s_id_actual  = FOC_GetId();
         s_rpm        = Encoder_MechanicalSpeed() * (60.0f / TWO_PI_F);
+#if !ENCODER_SOURCE_ADC
         s_angle_raw  = AS5600_GetRaw();
+#endif
     }
 }
 
@@ -139,6 +169,11 @@ static void banner(void)
     DBG_Puts("==================================================\r\n");
     DBG_Printf("build : %s %s\r\n", __DATE__, __TIME__);
     DBG_Printf("SYSCLK: %lu Hz\r\n", (unsigned long)HAL_RCC_GetSysClockFreq());
+#if ENCODER_SOURCE_ADC
+    DBG_Puts("Encoder: ESP32 ADC -> UART -> STM32\r\n");
+#else
+    DBG_Puts("Encoder: AS5600 I2C1 on PA15/PB7\r\n");
+#endif
     DBG_Puts("ESP32 link on PB6 (J7.1), 230400 baud, half-duplex.\r\n");
     DBG_Puts("Bridge DISABLED until ESP32 sends ENABLE command.\r\n");
 }
@@ -177,14 +212,22 @@ static void disable_bridge(void)
 /* -------------------------------------------------------------------------- */
 int main(void)
 {
+#if !ENCODER_SOURCE_ADC
     uint8_t  enc_status = 0u;
+#endif
     uint32_t t_prev;
     uint32_t t_print;
     uint32_t err_prev;
 
     Board_Init();
 
-    /* Encoder */
+#if ENCODER_SOURCE_ADC
+    /* Encoder angle arrives from the ESP32 ADC over the command link. */
+    Encoder_Init();
+    Encoder_SetExternalSource(1u);
+    Encoder_SetBlockingReader(read_external_angle);
+#else
+    /* Original direct AS5600 I2C mode. */
     Board_InitI2C1();
     if (AS5600_Init(&hi2c1, &enc_status) != 0)
     {
@@ -192,6 +235,7 @@ int main(void)
         Error_Handler();
     }
     Encoder_Init();
+#endif
 
     /* Driver */
     Board_DrvWake();
@@ -212,13 +256,22 @@ int main(void)
 
     /* Banner (uses standard debug UART TX before link init) */
     banner();
+#if ENCODER_SOURCE_ADC
+    DBG_Puts("Switching USART1 to 230400 baud half-duplex link...\r\n");
+    DBG_Puts("Waiting for ESP32 ADC angle samples...\r\n");
+
+    /* The link is also the encoder sample source, so it must be live before
+     * calibration and angle-tracker priming. No debug output follows this. */
+    EspLink_Init(LINK_UART_BAUD);
+#endif
 
     /* Encoder calibration */
+#if !ENCODER_SOURCE_ADC
     if ((enc_status & AS5600_ST_MD) == 0u)
     {
         DBG_Puts("WARNING: AS5600 no magnet detected.\r\n");
     }
-
+#endif
     if (Encoder_GetCal()->valid == 0u)
     {
         int rc;
@@ -253,7 +306,23 @@ int main(void)
         stop_motor("offset calibration failed");
     }
 
+#if ENCODER_SOURCE_ADC
     /* Prime encoder angle tracker */
+    for (uint32_t i = 0u; i < 8u; i++)
+    {
+        uint16_t raw = 0u;
+        if (read_external_angle(&raw, 50u) == 0)
+        {
+            Encoder_OnSample(raw);
+        }
+        Board_DelayMs(2u);
+    }
+    if (!Encoder_GetState()->valid)
+    {
+        stop_motor("encoder produced no valid samples");
+    }
+#else
+    /* Prime the I2C angle tracker before switching USART1 to the link. */
     for (uint32_t i = 0u; i < 8u; i++)
     {
         uint16_t raw = 0u;
@@ -267,12 +336,13 @@ int main(void)
     {
         stop_motor("encoder produced no valid samples");
     }
+#endif
 
+#if !ENCODER_SOURCE_ADC
     DBG_Puts("Switching USART1 to 230400 baud half-duplex link...\r\n");
     DBG_Puts("Waiting for ENABLE command from web UI...\r\n");
-
-    /* Reconfigure USART1 to half-duplex link mode (no further debug prints after this) */
     EspLink_Init(LINK_UART_BAUD);
+#endif
 
     t_prev   = Board_Millis();
     t_print  = t_prev;
@@ -318,6 +388,14 @@ int main(void)
         /* ---- process incoming command ------------------------------------ */
         if (EspLink_TakeCmd(&cmd, &seq))
         {
+#if ENCODER_SOURCE_ADC
+            if ((cmd.flags & ESPL_CMD_FLAG_ANGLE_VALID) != 0u)
+            {
+                Encoder_OnSample(cmd.angle_raw);
+                s_angle_raw = cmd.angle_raw;
+            }
+#endif
+
             float iq_req = (float)cmd.iq_ma * 0.001f;
             float id_req = (float)cmd.id_ma * 0.001f;
 
