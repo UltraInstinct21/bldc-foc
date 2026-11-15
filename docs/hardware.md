@@ -9,7 +9,7 @@ Board revision **v6**: `bldc_control_final_v6`. KiCad sources are in
 |---|---|
 | STM32G431CBT6 | MCU, LQFP-48, 170 MHz, 128 KB flash, 32 KB RAM |
 | DRV8316CT | Three-phase gate driver with integrated FETs, hardware-strapped, CSA |
-| AS5600 | Magnetic absolute encoder, I2C mode, external to the board |
+| AS5600 | Magnetic absolute encoder, I2C or analog OUT, external to the board |
 | LMR36510 | 24 V to 5 V buck |
 | TPS2116 | 5 V power mux (board supply / USB) |
 | TPS7A45 | 3.3 V LDO |
@@ -97,11 +97,18 @@ Alternate-function note:
 7. **ESP32 Power Isolation:**
    Do **NOT** power the ESP32 from the board's 3.3V rail (J6.1 or J5.1). ESP32 WiFi transmission bursts draw 400–500 mA, which will brown out the TPS7A4533 LDO and reset the STM32. Power the ESP32 via its own USB port.
 
-8. **Unconnected Schematic Pins (PB10 / PB11):**
+8. **ESP32 ADC encoder option:**
+   The `foc_esp` application can sample AS5600 OUT through a 10 kΩ/100 kΩ
+   divider on ESP32 GPIO34 (ADC1) and send the resulting 0..4095 angle in
+   each UART command. The analog path retains the AS5600 output filter delay;
+   use the standalone `foc` I2C path when low-latency, high-speed FOC is
+   required.
+
+9. **Unconnected Schematic Pins (PB10 / PB11):**
    Pins 22 (PB10) and 25 (PB11) are labeled `/I2C1_SCL` and `/I2C1_SDA` on the schematic, but PB10/PB11 do not support I2C1 on STM32G431 and are completely unrouted on the PCB. Do not use them.
 
-9. **NRST Tied to 3.3 V:**
+10. **NRST Tied to 3.3 V:**
    Pushbutton SW4 connects NRST to 3.3 V rather than GND. Use SWD debugger reset commands instead of SW4.
 
-10. **USB-C CC Pull-Ups:**
+11. **USB-C CC Pull-Ups:**
     CC1/CC2 are pulled to 3.3 V rather than 5.1 kΩ to GND, preventing power negotiation with Type-C PD power supplies.

@@ -49,6 +49,8 @@ static EncoderState s_st;
 static float    s_prev_mech;        /* previous wrapped mechanical angle */
 static uint32_t s_prev_tick;
 static uint8_t  s_have_prev;
+static uint8_t  s_external_source;
+static EncoderReadBlockingFn s_read_blocking = AS5600_ReadBlocking;
 
 /* -------------------------------------------------------------------------- */
 static float wrap_2pi(float a)
@@ -90,6 +92,8 @@ void Encoder_Init(void)
 
     memset(&s_st, 0, sizeof(s_st));
     s_have_prev = 0u;
+    s_external_source = 0u;
+    s_read_blocking = AS5600_ReadBlocking;
 
     if (Encoder_LoadCalibration() != 0)
     {
@@ -98,6 +102,17 @@ void Encoder_Init(void)
         s_cal.pole_pairs = (uint16_t)MOTOR_POLE_PAIRS;
         s_cal.valid      = 0u;
     }
+
+}
+
+void Encoder_SetExternalSource(uint8_t enabled)
+{
+    s_external_source = (enabled != 0u) ? 1u : 0u;
+}
+
+void Encoder_SetBlockingReader(EncoderReadBlockingFn reader)
+{
+    s_read_blocking = (reader != NULL) ? reader : AS5600_ReadBlocking;
 }
 
 /* Runs in interrupt context (I2C completion callback). Keep it short. */
@@ -160,7 +175,10 @@ void Encoder_Tick(void)
     if (div >= ENCODER_READ_DIV)
     {
         div = 0u;
-        (void)AS5600_StartRead();
+        if (s_external_source == 0u)
+        {
+            (void)AS5600_StartRead();
+        }
     }
 }
 
@@ -224,7 +242,7 @@ static int read_mech_blocking(float *mech)
 
     for (uint32_t i = 0u; i < 8u; i++)
     {
-        if (AS5600_ReadBlocking(&raw, 20u) == 0)
+        if (s_read_blocking(&raw, 20u) == 0)
         {
             float a = (float)raw * (TWO_PI_F / 4096.0f);
             sum_s += sinf(a);

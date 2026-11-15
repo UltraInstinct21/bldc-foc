@@ -12,11 +12,12 @@
  *   [5+len..6+len]    CRC-16/CCITT-FALSE over bytes [2..4+len]
  *
  * CMD payload (10 bytes):
- *   u8  flags         bit0=enable, bit1=clear_fault
+ *   u8  flags         bit0=enable, bit1=clear_fault, bit2=angle_valid
  *   i16 iq_ma         q-axis current reference, mA
  *   i16 id_ma         d-axis current reference, mA
  *   u16 rpm_limit     RPM limit (0 = use app default)
- *   u8  reserved[3]
+ *   u16 angle_raw    AS5600 analog angle sampled by the ESP32 (0..4095)
+ *   u8  reserved
  *
  * TLM payload (20 bytes):
  *   u8  flags         bit0=enabled, bit1=fault, bit2=cal_valid,
@@ -44,6 +45,7 @@
 
 #define ESPL_CMD_FLAG_ENABLE        (1u << 0)
 #define ESPL_CMD_FLAG_CLEAR_FAULT   (1u << 1)
+#define ESPL_CMD_FLAG_ANGLE_VALID   (1u << 2)
 
 #define ESPL_TLM_FLAG_ENABLED       (1u << 0)
 #define ESPL_TLM_FLAG_FAULT         (1u << 1)
@@ -63,6 +65,7 @@ typedef struct {
     int16_t  iq_ma;
     int16_t  id_ma;
     uint16_t rpm_limit;
+    uint16_t angle_raw;
 } EspCmd;
 
 /* Telemetry to send to the ESP32. */

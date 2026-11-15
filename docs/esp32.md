@@ -72,7 +72,7 @@ The shared line requires three passive components:
 | Pull-up resistor | 4.7 kΩ | Shared line to 3.3 V | Ensures the line rests high (open-drain idle state) |
 | Common GND | — | J6 pin 3 | Essential for a valid logic reference |
 
-### AS5600 analog OUT latency
+### AS5600 analog OUT path
 
 The AS5600 provides two angle outputs: analog OUT and I2C register
 RAW_ANGLE. The analog OUT is derived from the internal ANGLE register, which
@@ -80,9 +80,16 @@ is filtered with a 2.2 ms default lag. This lag makes it unusable for FOC
 above approximately 50 rpm because the angle error grows faster than the
 control loop can track.
 
-The firmware therefore uses I2C RAW_ANGLE (no filter, approximately 40 µs
-latency) via the I2C1 peripheral on PA15 (SCL) and PB7 (SDA). This is the
-reason PB7 must remain on I2C SDA rather than being used as UART RX.
+The standalone `foc` firmware and `foc_esp` I2C mode use I2C RAW_ANGLE (no
+filter, approximately 40 µs latency) via PA15/PB7. The `foc_esp` ADC mode
+instead connects OUT to
+ESP32 GPIO34 (ADC1) through a 10 kΩ/100 kΩ divider, averages four readings,
+maps 0..3.3 V to 0..4095, and transports the result in every 5 ms CMD frame.
+Select the STM32 mode with `make APP=foc_esp ENCODER_MODE=i2c` or
+`make APP=foc_esp ENCODER_MODE=adc`, and match the ESP32
+`AS5600_ADC_ENABLED` setting. The ADC path retains the AS5600
+analog output filter delay, so it is intended for integration/bring-up and
+is not as low-latency as the direct I2C path at high speed.
 
 ## 3. Pin Conflict Resolution
 
@@ -134,7 +141,8 @@ computed over [Type, Seq, Len, Payload]. Appended as two bytes
 | 1 | iq_ma | int16 (BE) | Commanded q-axis current in milliamps |
 | 3 | id_ma | int16 (BE) | Commanded d-axis current in milliamps (normally 0) |
 | 5 | rpm_limit | uint16 (BE) | Speed guard in rpm |
-| 7 | reserved | uint8[3] | Zero, reserved for future use |
+| 7 | angle_raw | uint16 (LE) | ESP32 ADC angle, 0–4095 |
+| 9 | reserved | uint8 | Zero, reserved |
 
 ### TLM frame (STM32 → ESP32) — payload 20 bytes, total 27 bytes
 
@@ -157,7 +165,8 @@ computed over [Type, Seq, Len, Payload]. Appended as two bytes
 |---|---|---|
 | 0 | 0x01 | ENABLE — enable the bridge and FOC output |
 | 1 | 0x02 | ESTOP — immediate iq=0, disable bridge |
-| 2–7 | — | Reserved, must be zero |
+| 2 | 0x04 | ANGLE_VALID — `angle_raw` contains an ESP32 ADC sample |
+| 3–7 | — | Reserved, must be zero |
 
 ### TLM flag bits (byte 0 of TLM payload)
 
@@ -244,8 +253,17 @@ J7.1 PB6  ─────────────── GPIO16 (RX)
 
 J6.3 GND ─────────────── GND  (essential)
 
-J7.2 PB7 ─── AS5600 SDA  (I2C, unchanged)
-J6.2 PA15 ── AS5600 SCL  (I2C, unchanged)
+AS5600 OUT ──10 kΩ────── ESP32 GPIO34 (ADC1)
+                         │
+                        100 kΩ
+                         │
+                        GND
+AS5600 VCC ──────────── 3.3 V
+AS5600 GND ──────────── common GND
+
+For standalone `foc` only:
+J7.2 PB7 ─── AS5600 SDA  (I2C)
+J6.2 PA15 ── AS5600 SCL  (I2C)
 J6.1 3.3V ── AS5600 VCC
 J6.3 GND  ── AS5600 GND
 ```

@@ -135,6 +135,7 @@ static void on_byte(uint8_t b)
                 c.iq_ma     = (int16_t)((uint16_t)s_rx.buf[1] | ((uint16_t)s_rx.buf[2] << 8));
                 c.id_ma     = (int16_t)((uint16_t)s_rx.buf[3] | ((uint16_t)s_rx.buf[4] << 8));
                 c.rpm_limit = (uint16_t)s_rx.buf[5] | ((uint16_t)s_rx.buf[6] << 8);
+                c.angle_raw = (uint16_t)s_rx.buf[7] | ((uint16_t)s_rx.buf[8] << 8);
 
                 s_pend.cmd   = c;
                 s_pend.seq   = s_rx.hdr[1];

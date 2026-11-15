@@ -36,6 +36,25 @@ static uint32_t   g_crc_errors  = 0;
 static uint32_t   g_last_web_hb = 0;   // last /api/set time
 static uint32_t   g_last_poll   = 0;
 
+#if AS5600_ADC_ENABLED
+static uint16_t readEncoderAdc() {
+  uint32_t sum = 0;
+  for (int i = 0; i < AS5600_ADC_SAMPLES; i++) {
+    sum += analogReadMilliVolts(AS5600_ADC_PIN);
+  }
+
+  uint32_t millivolts = (sum + (AS5600_ADC_SAMPLES / 2)) /
+                        AS5600_ADC_SAMPLES;
+  millivolts = (millivolts *
+                (AS5600_ADC_DIVIDER_TOP_KOHM + AS5600_ADC_DIVIDER_BOTTOM_KOHM) +
+                (AS5600_ADC_DIVIDER_BOTTOM_KOHM / 2)) /
+               AS5600_ADC_DIVIDER_BOTTOM_KOHM;
+  uint32_t raw = (millivolts * 4095u + (AS5600_ADC_FULL_SCALE_MV / 2)) /
+                 AS5600_ADC_FULL_SCALE_MV;
+  return (uint16_t)constrain(raw, 0u, 4095u);
+}
+#endif
+
 // ---- WebServer -------------------------------------------------------------
 static WebServer server(80);
 
@@ -97,7 +116,13 @@ static void stm_poll() {
   }
 
   uint8_t frame[ESPL_MAX_FRAME_LEN];
-  int flen = buildCmd(frame, g_seq++, g_enable, g_clear_fault, g_iq_ma, g_id_ma, g_rpm_limit);
+#if AS5600_ADC_ENABLED
+  int flen = buildCmd(frame, g_seq++, g_enable, g_clear_fault,
+                      g_iq_ma, g_id_ma, g_rpm_limit, readEncoderAdc());
+#else
+  int flen = buildCmd(frame, g_seq++, g_enable, g_clear_fault,
+                      g_iq_ma, g_id_ma, g_rpm_limit, 0);
+#endif
   g_clear_fault = false; // one-shot
 
   Serial2.write(frame, flen);
@@ -159,6 +184,10 @@ void setup() {
   Serial.println("\r\n=== BLDC-FOC ESP32 Bridge ===");
 
   Serial2.begin(STM_UART_BAUD, SERIAL_8N1, STM_UART_RX, STM_UART_TX);
+#if AS5600_ADC_ENABLED
+  analogReadResolution(12);
+  analogSetPinAttenuation(AS5600_ADC_PIN, ADC_11db);
+#endif
   while (Serial2.available()) { (void)Serial2.read(); } // flush any boot/debug text
   Serial.printf("UART2 at %d baud: RX=GPIO%d TX=GPIO%d\n",
                 STM_UART_BAUD, STM_UART_RX, STM_UART_TX);

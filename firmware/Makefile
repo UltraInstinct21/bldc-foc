@@ -23,6 +23,15 @@ SIZE    := $(CROSS)size
 
 # ---- application selection ------------------------------------------------
 APP ?= foc
+ENCODER_MODE ?= i2c
+
+ifeq ($(ENCODER_MODE),adc)
+ENCODER_SOURCE_ADC := 1
+else ifeq ($(ENCODER_MODE),i2c)
+ENCODER_SOURCE_ADC := 0
+else
+$(error Unknown ENCODER_MODE '$(ENCODER_MODE)'. Use i2c or adc)
+endif
 
 APPS := test_00_hello \
         test_01_as5600 \
@@ -66,7 +75,7 @@ APP_EXTRA ?=
 
 # ---- paths ----------------------------------------------------------------
 BUILD    := build
-OBJDIR   := $(BUILD)/$(APP)/obj
+OBJDIR   := $(BUILD)/$(APP)/obj/$(ENCODER_MODE)
 TARGET   := $(BUILD)/$(APP)/$(APP)
 LDSCRIPT := common/STM32G431CBTX_FLASH.ld
 
@@ -110,7 +119,7 @@ DEPS := $(OBJS:.o=.d)
 
 # ---- flags ----------------------------------------------------------------
 MCU     := -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
-DEFS    := -DSTM32G431xx -DUSE_HAL_DRIVER
+DEFS    := -DSTM32G431xx -DUSE_HAL_DRIVER -DENCODER_SOURCE_ADC=$(ENCODER_SOURCE_ADC)
 INCS    := -Icommon -Ifoc -Ifoc_esp -I$(APP_DIR) \
            -IDrivers/STM32G4xx_HAL_Driver/Inc \
            -IDrivers/STM32G4xx_HAL_Driver/Inc/Legacy \

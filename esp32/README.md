@@ -34,18 +34,26 @@ BLDC board GND (J6.3 or J5.4) ── ESP32 GND
 > **Important**: the ESP32 and the BLDC board must share a common GND even if powered separately.
 > Never connect 5 V from the ESP32 USB to the BLDC board 3.3 V rail.
 
-## AS5600 encoder (unchanged from standalone foc app)
+## AS5600 encoder in `foc_esp` ADC mode
 
-The encoder I2C connection on the BLDC board is unaffected:
+Connect the AS5600 analog output to ESP32 GPIO34 through a 10 kΩ / 100 kΩ
+divider (10 kΩ from OUT to GPIO34, 100 kΩ from GPIO34 to ground):
 
 ```
-AS5600 SCL ── PA15 (J6.2)
-AS5600 SDA ── PB7  (J7.2)   ← shares the J7 connector but different pin from the UART link
-AS5600 VCC ── J6.1 (3.3 V)
-AS5600 GND ── J6.3
+AS5600 OUT  ── 10 kΩ ── GPIO34 (ESP32 ADC1)
+                         │
+                        100 kΩ
+                         │
+                        GND
+AS5600 VCC  ── 3.3 V
+AS5600 GND  ── common GND
 ```
 
-The AS5600 `OUT` pin is **not** used (the firmware reads `RAW_ANGLE` over I2C for minimum latency).
+The ESP32 averages four ADC samples, maps 0..3.3 V to 0..4095, and sends
+the result in every 5 ms command frame. The STM32 feeds those samples to the
+encoder tracker; `foc_esp` does not initialize STM32 I2C. Standalone `foc`
+still uses AS5600 `RAW_ANGLE` over I2C. To test the original I2C path in
+`foc_esp`, build with `ENCODER_MODE=i2c` and leave `AS5600_ADC_ENABLED` at `0`.
 
 ## Building and flashing
 
