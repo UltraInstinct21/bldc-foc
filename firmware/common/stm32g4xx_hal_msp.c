@@ -1,6 +1,6 @@
 /**
  * @file    stm32g4xx_hal_msp.c
- * @brief   Low-level clocks / pin AFs for bldc_control_final_v6.
+ * @brief   Low-level clocks / pin AFs for bldc_control_final_v6 (board v7).
  *
  * Pin map (verified against bldc_control_final_v6.kicad_pcb):
  *
@@ -15,7 +15,9 @@
  *   TIM1_CH3N  PB15 AF4 -> INLA
  *   ADC1_IN1/2/3  PA0/PA1/PA2   SOA/SOB/SOC
  *
- * The DRV8316CT is strapped for hardware mode, so there is no SPI pin map.
+ *   USB_DM/DP  PA11/PA12  (USB-C console, set up by usb_console.c)
+ *
+ * The DRV8316T is strapped for hardware mode, so there is no SPI pin map.
  */
 #include "board.h"
 
@@ -139,10 +141,11 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    /* PA8/PA9/PA10 = CH1/CH2/CH3 (AF6). */
+    /* PA8/PA9/PA10 = CH1/CH2/CH3 (AF6). Pull-downs so that a channel the
+     * timer is not driving reads INH = INL = 0, which is Hi-Z on the DRV. */
     gpio.Pin       = GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10;
     gpio.Mode      = GPIO_MODE_AF_PP;
-    gpio.Pull      = GPIO_NOPULL;
+    gpio.Pull      = GPIO_PULLDOWN;
     gpio.Speed     = GPIO_SPEED_FREQ_VERY_HIGH;
     gpio.Alternate = GPIO_AF6_TIM1;
     HAL_GPIO_Init(GPIOA, &gpio);

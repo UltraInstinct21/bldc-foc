@@ -6,15 +6,20 @@
  *   - TIM1 centre-aligned 20 kHz on PA8/PA9/PA10 (CH1/2/3)
  *   - complementary outputs on PB13/PB14 (CH1N/CH2N) and PB15 (CH3N)
  *   - the board phase mapping CH1->INHC, CH2->INHB, CH3->INHA
- *   - 120-degree three-phase sine modulation
+ *   - 120-degree three-phase modulation, bottom-clamped (DPWMMIN)
  *
  * Scope INHA/INHB/INHC (DRV pins) and the complementary INLA/INLB/INLC.
- * DRVOFF is HIGH by default, so the power stage is Hi-Z and the motor will
- * not move. Set PWM_TEST_ENABLE_OUTPUT to 1 only with the motor free and a
- * current-limited supply.
+ * The DRV8316 stays asleep (nSLEEP low) by default, so the power stage is
+ * Hi-Z and the motor will not move. Set PWM_TEST_ENABLE_OUTPUT to 1 only
+ * with the motor free and a current-limited supply.
  *
- * Expected: 20 kHz carrier, three sine envelopes 120 degrees apart,
- * each high side and its low side complementary with ~750 ns dead time.
+ * Modulation is DPWMMIN, not plain sine: with OCP/SR (pin 35) floating the
+ * DRV8316 passes almost no current when all three phases switch. In each
+ * 120-degree sector one phase sits at 0 % (INH low, INL high, no edges).
+ *
+ * Expected: 20 kHz carrier, three envelopes 120 degrees apart, one phase
+ * clamped low at any time, each high side and its low side complementary
+ * with ~1.0 us dead time (SLEW = 125 V/us needs 1 us in 6x PWM mode).
  */
 #include "board.h"
 #include "debug.h"
@@ -45,22 +50,28 @@ int main(void)
                (unsigned long)(170000000UL / (2UL * (PWM_ARR_20KHZ + 1UL))),
                (double)PWM_TEST_MOD,
                (double)PWM_TEST_ELEC_HZ);
-    DBG_Puts("CH1=INHC CH2=INHB CH3=INHA, complements on CHxN.\r\n");
-    DBG_Puts("DRVOFF is HIGH: OUTx stay Hi-Z.\r\n\r\n");
+    DBG_Puts("CH1=INHC CH2=INHB CH3=INHA, complements on CHxN, 1 us dead time.\r\n");
+    DBG_Puts("DRV8316 asleep: OUTx stay Hi-Z.\r\n\r\n");
 
     Board_Tim1StartPwm();
 
 #if PWM_TEST_ENABLE_OUTPUT
     Board_DrvWake();
-    Board_DelayMs(2u);
+    if (DRV8316_Init() != 0)
+    {
+        DBG_Puts("DRV8316 fault after wake: not enabling the bridge.\r\n");
+        Board_Tim1StopPwm();
+        for (;;) { Board_DelayMs(1000u); }
+    }
     Board_DrvOutputEnable();
-    DBG_Puts("DRVOFF LOW: power stage enabled.\r\n");
+    DBG_Puts("DRV awake, DRVOFF LOW: power stage enabled.\r\n");
 #endif
 
     t0 = Board_Millis();
 
     for (;;)
     {
+        float d[3];
         float a, b, c;
         uint32_t t = Board_Millis();
 
@@ -70,12 +81,22 @@ int main(void)
             theta -= TWO_PI_F;
         }
 
-        a = 0.5f + 0.5f * PWM_TEST_MOD * sinf(theta);
-        b = 0.5f + 0.5f * PWM_TEST_MOD * sinf(theta - TWO_PI_F / 3.0f);
-        c = 0.5f + 0.5f * PWM_TEST_MOD * sinf(theta + TWO_PI_F / 3.0f);
+        Board_DutyDpwmMin(PWM_TEST_MOD * sinf(theta),
+                          PWM_TEST_MOD * sinf(theta - TWO_PI_F / 3.0f),
+                          PWM_TEST_MOD * sinf(theta + TWO_PI_F / 3.0f),
+                          1.0f, d);
+        a = d[0];
+        b = d[1];
+        c = d[2];
 
-        /* Board channel order is CH1=C, CH2=B, CH3=A. */
-        Board_SetPwmRaw(c, b, a);
+        Board_SetPwmPhases(a, b, c);    /* A -> CH3, B -> CH2, C -> CH1 */
+
+        if (Board_StopRequested() != 0u)
+        {
+            Board_Tim1StopPwm();
+            DBG_Puts("Stopped from the console.\r\n");
+            for (;;) { Board_DelayMs(1000u); }
+        }
 
         if ((t - t_print) >= 1000u)
         {

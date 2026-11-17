@@ -8,17 +8,20 @@
  *   - DMA1 Channel 1 circular transfer of 3 ranks
  *   - zero-current offset calibration and V -> A conversion
  *
- * TIM1 runs as a time base only (MOE off, no PWM outputs), so the DRV low
- * side is off and the shunts should read zero current -> ~1.65 V.
+ * TIM1 runs as a time base only (MOE off, no PWM outputs), so no current
+ * flows. The DRV must be AWAKE for the CSAs to work: SOx reads 0 V while
+ * the driver sleeps and ~1.64 V (VREF/2) when awake. Needs VIN on J1.
  *
- * Inject a known current (or enable the bridge in a separate test) to check
- * gain and sign. The DRV8316CT CSA is 0.3 V/A with a VREF/2 offset.
- * FOC uses i_phase = -(V_SOx - offset)/0.3.
+ * Gain and sign (DRV8316T, GAIN open): 0.3 V/A, SOx rises with current
+ * flowing out of the phase into the motor, i = (V_SOx - offset) / 0.3.
+ * The ADC saturates at about +/-5.4 A. Measured on the board: offsets
+ * 1.64 V; "A at 10 %, B and C at 0 %" on a stalled 0.5 ohm motor at 9 V
+ * gave A = +2.9 A, B = C = -1.6 A (test_05 prints live current).
  */
 #include "board.h"
 #include "debug.h"
 
-#define CSA_V_PER_A     0.3f
+#define CSA_V_PER_A     DRV8316_CSA_V_PER_A
 #define ADC_VREF        3.3f
 #define ADC_FULL        4095.0f
 
@@ -45,6 +48,14 @@ int main(void)
     uint32_t t_print;
 
     Board_Init();
+
+    /* SOx is only driven while the DRV8316 is awake. */
+    Board_DrvWake();
+    if (DRV8316_Init() != 0)
+    {
+        DBG_Puts("\r\nDRV8316 nFAULT low after wake: VM missing? SOx will read 0 V.\r\n");
+    }
+
     Board_InitTim1(PWM_ARR_20KHZ);
     Board_Tim1AdcTrigger();
     Board_InitAdc1();
@@ -100,7 +111,15 @@ int main(void)
 
     DBG_Printf("Offsets: SOA=%.4f V  SOB=%.4f V  SOC=%.4f V\r\n",
                (double)off[0], (double)off[1], (double)off[2]);
-    DBG_Puts("(nominal 1.650 V; per-phase trim removes CSA/ADC offset)\r\n");
+    DBG_Puts("(nominal 1.65 V, measured 1.64 V; valid window 1.30..2.00 V)\r\n");
+    for (uint32_t i = 0u; i < ADC_BUF_LEN; i++)
+    {
+        if ((off[i] < DRV8316_CSA_OFF_MIN_V) || (off[i] > DRV8316_CSA_OFF_MAX_V))
+        {
+            DBG_Printf("SO%c offset out of range: DRV asleep/unpowered or SOx open.\r\n",
+                       (int)('A' + (int)i));
+        }
+    }
     DBG_Puts("\r\n  raw A/B/C        V A/B/C              I A/B/C (A)\r\n");
 
     t_print = Board_Millis();

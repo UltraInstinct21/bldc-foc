@@ -4,7 +4,7 @@
  *
  * Chain:
  *   AS5600 (I2C1) -> encoder.c -> electrical angle
- *   ADC1 PA0/PA1/PA2 (SOA/SOB/SOC) -> foc.c -> TIM1 -> DRV8316CT
+ *   ADC1 PA0/PA1/PA2 (SOA/SOB/SOC) -> foc.c -> TIM1 -> DRV8316T
  *
  * First run: if no valid encoder calibration is stored, the app performs
  * the sign/offset calibration itself (rotor must be free) and writes it to
@@ -30,7 +30,18 @@
 #define APP_IQ_A            1.0f    /* target q-axis current, A (0.071 Nm/A) */
 #define APP_IQ_RAMP         0.5f    /* A/s, keeps the start gentle           */
 #define APP_RPM_LIMIT       800.0f  /* AS5600 is good to ~1000 rpm only      */
-#define APP_CAL_MOD         0.01f   /* ~2.2 A at standstill, do not raise    */
+/* Alignment modulation for the encoder calibration (peak phase V / Vbus).
+ * The 1 us dead time sets a floor: with DPWMMIN the vector at theta = 0
+ * switches only phase A, at duty 1.5 * mod, and any pulse under 1 us (2 %)
+ * is swallowed by the dead time. 0.01 gave no current at all. Effective
+ * duty is about 1.5 * mod - 0.02:
+ *   0.025 -> 1.75 % -> ~2.6 A on the 0.109 ohm motor at 24 V
+ *                      ~0.4 A on the bring-up drone motor at 9 V
+ * Raise it with USER_DEFS (and FOC_ALIGN_MOD_MAX) if the rotor does not
+ * follow (rc = -3); 0.05 is about 0.8-1 A on the drone motor at 9 V. */
+#ifndef APP_CAL_MOD
+#define APP_CAL_MOD         0.025f
+#endif
 #define APP_CAL_HOLD_MS     400u
 #define APP_OFFSET_SAMPLES  500u    /* 1 ms apart -> 0.5 s                  */
 #define APP_ENC_ERR_PER_WINDOW 20u  /* I2C errors per 200 ms before stopping */
@@ -94,9 +105,9 @@ static void start_adc(void)
 static void stop_motor(const char *why)
 {
     FOC_Disable();
-    Board_DrvOutputDisable();
+    Board_BridgeOff();          /* MOE = 0, DRVOFF low (see board.h) */
     DBG_Printf("STOP: %s\r\n", why);
-    DBG_Puts("Bridge disabled. Reset to run again.\r\n");
+    DBG_Puts("Bridge off. Power-cycle or reflash to run again (SW4 reset does not work).\r\n");
     for (;;)
     {
         Board_DelayMs(1000u);
@@ -108,7 +119,7 @@ static void banner(void)
     DBG_Puts("\r\n\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Puts(" bldc_control_final_v6  |  foc\r\n");
-    DBG_Puts(" STM32G431CBT6 + DRV8316CT + AS5600\r\n");
+    DBG_Puts(" STM32G431CBT6 + DRV8316T + AS5600\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Printf("build : %s %s\r\n", __DATE__, __TIME__);
     DBG_Printf("SYSCLK: %lu Hz\r\n", (unsigned long)HAL_RCC_GetSysClockFreq());
@@ -139,7 +150,7 @@ int main(void)
     }
     Encoder_Init();
 
-    /* Gate driver. The DRV8316CT is strapped in hardware mode (no SPI).
+    /* Gate driver. The DRV8316T is strapped in hardware mode (no SPI).
      * Waking it sets nSLEEP high; check nFAULT after tWAKE. */
     Board_DrvWake();
     Board_DelayMs(5u);
@@ -181,8 +192,8 @@ int main(void)
         Board_DrvOutputEnable();
         rc = Encoder_Calibrate(FOC_ApplyOpenLoopVector, APP_CAL_HOLD_MS,
                                APP_CAL_MOD);
-        Board_DrvOutputDisable();
         Board_Tim1StopPwm();
+        Board_BridgeOff();
 
         if (rc != 0)
         {
@@ -202,7 +213,11 @@ int main(void)
     Board_DelayMs(20u);                 /* let the DMA fill a few frames */
 
     DBG_Puts("Measuring zero-current offsets (bridge off)...\r\n");
-    FOC_CalibrateOffsets(g_adc, APP_OFFSET_SAMPLES);
+    if (FOC_CalibrateOffsets(g_adc, APP_OFFSET_SAMPLES) != 0)
+    {
+        stop_motor("CSA offsets outside 1.3-2.0 V (expect ~1.64 V): "
+                   "is the DRV awake and VM present?");
+    }
 
     if (FOC_IsReady() == 0u)
     {
@@ -255,7 +270,12 @@ int main(void)
         }
         t_prev = now;
 
-        if (Board_DrvFault() != 0u)
+        if (Board_StopRequested() != 0u)
+        {
+            stop_motor("stop requested on the USB console");
+        }
+
+        if (Board_DrvFaultDebounced() != 0u)
         {
             (void)DRV8316_ClearFault();
             if (Board_DrvFault() != 0u)
