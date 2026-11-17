@@ -98,6 +98,11 @@ static volatile Mod      s_mod;
 static volatile FocKind  s_kind;
 static const char *volatile s_stop_reason;
 static float    s_off[3];
+/* Per-phase CSA usable (offset in range). With one bad phase (e.g. pin 38 =
+ * SOC open after the 2026-11-18 rework) that phase is rebuilt from the other
+ * two on every sample (ia + ib + ic = 0): two-shunt sensing. */
+static uint8_t  s_ph_ok[3] = { 1u, 1u, 1u };
+static int8_t   s_bad_ph = -1;
 static uint32_t s_arr;
 static float    s_d_app[3];         /* duties in effect for the next sample  */
 static uint8_t  s_step = 0xFFu;
@@ -671,11 +676,28 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
     if ((s_mod == M_6STEP) && ((st == S_ALIGN) || (st == S_RUN)))
     {
         uint8_t s = (s_step < 6u) ? s_step : 0u;
+        int lp = -1, pp = -1;
 
         for (uint32_t k = 0u; k < 3u; k++)
         {
             if (k_steps[s][k] == Z) { i[k] = 0.0f; valid[k] = 0u; all_valid = 0u; }
+            else if (k_steps[s][k] == L) { lp = (int)k; }
+            else { pp = (int)k; }
         }
+        /* conducting pair carries equal and opposite current */
+        if ((s_bad_ph >= 0) && (lp >= 0) && (pp >= 0))
+        {
+            if (s_bad_ph == lp) { i[lp] = -i[pp]; }
+            if (s_bad_ph == pp) { i[pp] = -i[lp]; }
+        }
+    }
+    else if (s_bad_ph >= 0)
+    {
+        /* two-shunt: rebuild the bad phase from the two good ones */
+        uint32_t b = (uint32_t)s_bad_ph;
+        i[b] = -(i[(b + 1u) % 3u] + i[(b + 2u) % 3u]);
+        valid[b] = 0u;
+        all_valid = 0u;
     }
     else
     {
@@ -717,7 +739,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
     {
         uint8_t s = (s_step < 6u) ? s_step : 0u;
         float il = 0.0f;
-        for (uint32_t k = 0u; k < 3u; k++) { if (k_steps[s][k] == L) { il = ir[k]; } }
+        for (uint32_t k = 0u; k < 3u; k++) { if (k_steps[s][k] == L) { il = i[k]; } }
         imag = fabsf(il);
     }
     else
@@ -865,12 +887,23 @@ static uint8_t csa_offsets(void)
         Board_DelayUs(100u);
         for (uint32_t k = 0u; k < 3u; k++) { sum[k] += (float)g_dma[k]; }
     }
-    for (uint32_t k = 0u; k < 3u; k++)
+    s_bad_ph = -1;
     {
-        float v;
-        s_off[k] = sum[k] / 64.0f;
-        v = s_off[k] * lsb;
-        if ((v < DRV8316_CSA_OFF_MIN_V) || (v > DRV8316_CSA_OFF_MAX_V)) { ok = 0u; }
+        uint32_t nbad = 0u;
+        for (uint32_t k = 0u; k < 3u; k++)
+        {
+            float v;
+            s_off[k] = sum[k] / 64.0f;
+            v = s_off[k] * lsb;
+            s_ph_ok[k] = ((v >= DRV8316_CSA_OFF_MIN_V) && (v <= DRV8316_CSA_OFF_MAX_V)) ? 1u : 0u;
+            if (s_ph_ok[k] == 0u) { s_bad_ph = (int8_t)k; nbad++; }
+        }
+        ok = (nbad <= 1u) ? 1u : 0u;
+        if (nbad == 1u)
+        {
+            printf("CSA: SO%c offset %.3f V out of range -> rebuilt from the other two phases\r\n",
+                   (int)('A' + s_bad_ph), (double)(s_off[s_bad_ph] * lsb));
+        }
     }
     return ok;
 }

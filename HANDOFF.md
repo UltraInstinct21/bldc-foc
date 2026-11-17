@@ -11,7 +11,15 @@ do next.
 | Last commits from the session | `bf1cb5a` (merge of `board-v7-bringup` into `main`), then the commit that added this file |
 | Claude Code session ID | `015c0b42-d4f5-45d3-ad99-d9f4b6129f17` |
 | Session transcript on the old laptop | `~/.claude/projects/-home-sarthi-Projects-bldc-foc/015c0b42-d4f5-45d3-ad99-d9f4b6129f17.jsonl` |
-| Board currently flashed with | `test_09_drv_diag` (bridge never enabled; safe to leave powered) |
+| Board currently flashed with | `test_08_drive_lab` (idle until commanded) |
+
+> **Update, end of session (2026-11-18 ~02:30):** the DRV8316 fault in
+> section 3 was fixed by the user (driver OK, nFAULT 1654 µs after wake).
+> With pins 35 and 36 grounded: **sine and SVPWM now run** (to ~180 Hz el.),
+> the CSA gain is **0.15 V/A** (confirmed, firmware updated). Two hardware
+> faults remain from the rework: **SOC (pin 38) open** (firmware rebuilds
+> ic = −(ia + ib)) and **phase C high side never conducts** (INHC, DRV8316
+> pin 31, most likely open). See section 3a.
 
 ---
 
@@ -100,7 +108,33 @@ Full reference: `varun_foc_context_README.md` and [`docs/hardware.md`](docs/hard
 | USB-C | Works; C-to-A cable preferred (CC resistors are pull-ups). The connector joints were reflowed once during bring-up |
 | Reset button SW4 | Does nothing (wired to 3V3). Replug to reset |
 
-### ⚠ Open problem: the DRV8316 is faulted after the pin 35/36 rework
+### 3a. Current state (latest)
+
+`test_09_drv_diag`: driver OK; nFAULT low 1654 µs after wake, clears with the
+30 µs pulse, follows DRVOFF; SOA 1.655 V, SOB 1.655 V awake (0 V asleep);
+**SOC ~0.33 V both awake and asleep → pin 38 not connected to PA2**.
+
+Static duty table (`test_08 raw`, 9 V, 0.15 V/A), pins 35/36 grounded:
+
+| A/B/C duty | iA | iB | rebuilt iC | Meaning |
+|---|---|---|---|---|
+| 26/14/20, 56/44/50 | +2.6 A | −2.5 A | — | all-phase switching now conducts (pin 35 fix works) |
+| 10/0/0 | +3.36 | −1.71 | −1.65 | A high side OK; B, C low sides OK |
+| 0/10/0 | −1.71 | +3.43 | −1.72 | B high side OK |
+| **0/0/10** | **−0.01** | **0.00** | **0** | **C high side does not conduct** |
+| 10/10/0 | +1.65 | +1.68 | −3.33 | C low side OK |
+
+Open loop with C rebuilt from A and B: 6-step 4 → 200 Hz (held 8 s), sine and
+SVPWM to ~180 Hz with 85–99 % current flow, but C RMS 0.5–0.8 A vs 1.6–1.7 A
+on A/B because C can only sink. Log:
+`docs/results/2026-11-18_pin35_grounded.log`.
+
+To fix (power off): continuity MCU pin 30 (PA8) → DRV8316 pin 31 (INHC) and
+MCU pin 10 (PA2) → DRV8316 pin 38 (SOC), both 0 Ω; pins 31/32/33 not bridged;
+reflow 31 and 38. Re-run `raw 0 0 10` (expect iC ≈ +3.4 A, iA ≈ iB ≈ −1.7 A)
+and `test_09_drv_diag` (expect SOC ≈ 1.65 V awake, 0 V asleep).
+
+### Earlier (now fixed): the DRV8316 was faulted after the pin 35/36 rework
 
 `test_09_drv_diag` output, last run:
 
@@ -271,16 +305,15 @@ Recovery:
 
 ## 8. Next steps, in order
 
-1. **Fix the DRV8316 fault** (section 3). Done when `test_09_drv_diag` prints
-   `VERDICT: driver OK` with SOA/SOB/SOC ≈ 1.65 V.
-2. **Update the CSA gain for GAIN = GND:** set `DRV8316_CSA_V_PER_A` to
-   `0.15f` in `firmware/common/board.h` (single constant; test_04/05/08, foc
-   and foc_esp all use it). Range becomes about ±10.9 A; the DRV is still 8 A
-   peak, so keep limits as they are. Re-check offsets with `test_04`.
+1. ~~Fix the DRV8316 fault~~ (done). **Fix INHC (pin 31) and SOC (pin 38)**
+   (section 3a). Then remove nothing in firmware: the two-shunt fallback only
+   kicks in when an offset is out of range.
+2. ~~CSA gain for GAIN = GND~~ (done: `DRV8316_CSA_V_PER_A = 0.15f`, confirmed
+   on the board: same duty for "2 A" as at 0.3 V/A before).
 3. **Re-characterise with pin 35 grounded** (ASR/AAR off):
    - `test_08`: `raw` table. 56/44/50 should now pass current like 20/0/10.
-   - `sine` and `svpwm` open loop (the user's original request:
-     "flash the svpwm code and monitor").
+   - `sine` and `svpwm` open loop: done, both run (section 3a); repeat
+     after the phase C fix and check C RMS ≈ A and B RMS.
    - `rl`, then `if` with `set focmod svpwm`, then `sl`.
    - Record a new 35 Hz I/f trace and run `observer_replay.py`: the dead-time
      loss will probably be back; compare the models it prints, then set the

@@ -111,6 +111,7 @@ static volatile float    s_i_peak;
 static volatile uint32_t s_state_ms;
 static float             s_off[3];      /* zero-current SOx, ADC counts */
 static uint8_t           s_csa_ok;
+static uint8_t           s_ph_ok[3];    /* per-phase CSA usable */
 static uint32_t          s_arr;
 
 /* ---- TIM1 output control ------------------------------------------------ */
@@ -183,11 +184,14 @@ static void motor_stop(void)
     __enable_irq();
 }
 
-/* Zero-current offsets with the bridge off. Returns 1 if usable. */
+/* Zero-current offsets with the bridge off. Returns 1 if usable: at least two
+ * phases good. In six-step the held-low (L) and PWM (P) phase carry the same
+ * current, so one bad SOx (e.g. an open pin 38 = SOC) can be covered by the
+ * other phase of the conducting pair. */
 static uint8_t csa_calibrate(void)
 {
     float    sum[3] = { 0.0f, 0.0f, 0.0f };
-    uint8_t  ok = 1u;
+    uint8_t  nok = 0u;
     const float lsb = 3.3f / 4095.0f;
 
     for (uint32_t k = 0u; k < 64u; k++)
@@ -204,16 +208,17 @@ static uint8_t csa_calibrate(void)
 
         s_off[i] = sum[i] / 64.0f;
         v = s_off[i] * lsb;
-        if ((v < DRV8316_CSA_OFF_MIN_V) || (v > DRV8316_CSA_OFF_MAX_V))
-        {
-            ok = 0u;
-        }
+        s_ph_ok[i] = ((v >= DRV8316_CSA_OFF_MIN_V) && (v <= DRV8316_CSA_OFF_MAX_V)) ? 1u : 0u;
+        nok += s_ph_ok[i];
     }
-    DBG_Printf("CSA offsets A %.3f B %.3f C %.3f V -> %s\r\n",
-               (double)(s_off[0] * lsb), (double)(s_off[1] * lsb),
-               (double)(s_off[2] * lsb),
-               ok ? "OK" : "NOT USABLE (duty capped at 8 %)");
-    return ok;
+    DBG_Printf("CSA offsets A %.3f%s B %.3f%s C %.3f%s V, %.2f V/A -> %s\r\n",
+               (double)(s_off[0] * lsb), s_ph_ok[0] ? "" : "(BAD)",
+               (double)(s_off[1] * lsb), s_ph_ok[1] ? "" : "(BAD)",
+               (double)(s_off[2] * lsb), s_ph_ok[2] ? "" : "(BAD)",
+               (double)DRV8316_CSA_V_PER_A,
+               (nok >= 2u) ? ((nok == 3u) ? "OK" : "OK (bad phase covered by the other phase of each pair)")
+                           : "NOT USABLE (duty capped at 8 %)");
+    return (nok >= 2u) ? 1u : 0u;
 }
 
 /* Returns 0 if the bridge was started. */
@@ -389,14 +394,18 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
     {
         /* The L phase's low side is on all period, so its SOx is the full
          * winding current. Sampled at the counter peak (TIM1 OC4REF). */
-        uint8_t lp = 0u;
+        uint8_t lp = 0u, pp = 0u, mp;
         float   i;
 
         for (uint8_t p = 0u; p < 3u; p++)
         {
             if (k_steps[s_step][p] == L) { lp = p; }
+            if (k_steps[s_step][p] == P) { pp = p; }
         }
-        i = fabsf(((float)g_dma[lp] - s_off[lp]) * (3.3f / 4095.0f) / DRV8316_CSA_V_PER_A);
+        /* L phase normally; the P phase (its low side is on at the counter
+         * peak) if the L phase's CSA is bad */
+        mp = (s_ph_ok[lp] != 0u) ? lp : pp;
+        i = fabsf(((float)g_dma[mp] - s_off[mp]) * (3.3f / 4095.0f) / DRV8316_CSA_V_PER_A);
         s_i_filt += 0.01f * (i - s_i_filt);     /* tau ~ 5 ms */
         if (i > s_i_peak) { s_i_peak = i; }
     }

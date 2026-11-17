@@ -53,11 +53,15 @@
 #define DRV_NFAULT_PORT     GPIOA
 #define DRV_NFAULT_PIN      GPIO_PIN_6
 
-/* Current-sense amplifiers (GAIN pin open). Measured on the board:
- * 1.64 V at 0 A, 0.3 V/A, rising with current flowing out of the phase into
- * the motor. The ADC saturates at about +/-5.4 A. If GAIN is ever tied to
- * GND this becomes 0.15 V/A: change it here, and only here. */
-#define DRV8316_CSA_V_PER_A     0.3f
+/* Current-sense amplifiers. SOx = VREF/2 (1.65 V) at 0 A, rising with current
+ * flowing out of the phase into the motor (measured).
+ * GAIN pin 36: open = 0.3 V/A (bring-up, ADC saturates ~+/-5.4 A);
+ *              GND  = 0.15 V/A (reworked 2026-11-18, ~+/-10.9 A range).
+ * If the real gain were still 0.3 V/A, this setting makes every current read
+ * 2x high: limiters then act early, i.e. the safe direction. */
+#ifndef DRV8316_CSA_V_PER_A
+#define DRV8316_CSA_V_PER_A     0.15f
+#endif
 #define DRV8316_CSA_OFF_MIN_V   1.3f    /* zero-current offset sanity window */
 #define DRV8316_CSA_OFF_MAX_V   2.0f
 

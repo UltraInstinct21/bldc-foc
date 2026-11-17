@@ -1,0 +1,222 @@
+
+===== 2026-11-18 02:15:17 steps: raw sine svpwm
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> params
+params
+vbus 9.0 V ilim 2.00 A amp 40.0% f 200.0 Hz fstart 4.0 accel 5.0+0.10*f align 500 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> raw 10 0 0
+raw 10 0 0
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  10.0   0.0   0.0 | mean A  +3.42 B  -1.73 C  +0.00 A | flow% A  99 B  99 C   0 | raw done
+ready
+ok
+
+>>> raw 12 0 6
+raw 12 0 6
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  12.0   0.0   6.0 | mean A  +3.27 B  -3.14 C  +0.00 A | flow% A  99 B  99 C   0 | raw done
+ready
+ok
+
+>>> raw 12 2 6
+raw 12 2 6
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  12.0   2.0   6.0 | mean A  +1.95 B  -1.82 C  +0.00 A | flow% A 100 B 100 C   0 | raw done
+ready
+ok
+
+>>> raw 26 14 20
+raw 26 14 20
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  26.0  14.0  20.0 | mean A  +2.64 B  -2.50 C  +0.00 A | flow% A 100 B 100 C   0 | raw done
+ready
+ok
+
+>>> raw 56 44 50
+raw 56 44 50
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  56.0  44.0  50.0 | mean A  +2.59 B  -2.44 C  +0.00 A | flow% A 100 B 100 C   0 | raw done
+ready
+ok
+
+>>> raw 55 45 50
+raw 55 45 50
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  55.0  45.0  50.0 | mean A  +1.95 B  -1.85 C  +0.00 A | flow% A 100 B 100 C   0 | raw done
+ready
+ok
+
+>>> mode sine
+mode sine
+mode sine
+ok
+
+>>> amp 40
+amp 40
+ok
+
+>>> f 200
+f 200
+ok
+
+>>> start
+start
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+start sine: amp 40% f 200 Hz ilim 2.0 A
+  10.23 sine  ALIGN f    0.0 amp  11.0% | I 2.00 pk 1.93 | rms A 1.03 B 0.84 C 0.18 | res -1.00 | flow  68% | ok
+  10.73 sine  RUN   f    6.8 amp  10.0% | I 0.11 pk 2.74 | rms A 1.19 B 1.24 C 0.48 | res -1.00 | flow  86% | ok
+  11.23 sine  RUN   f    9.7 amp  10.2% | I 0.34 pk 2.33 | rms A 1.15 B 1.16 C 0.30 | res -1.00 | flow  84% | ok
+  11.73 sine  RUN   f   12.7 amp  11.1% | I 1.60 pk 2.57 | rms A 1.23 B 1.21 C 0.36 | res -1.00 | flow  87% | ok
+  12.23 sine  RUN   f   16.0 amp  10.6% | I 1.88 pk 2.65 | rms A 1.30 B 1.30 C 0.43 | res -1.00 | flow  85% | ok
+  12.73 sine  RUN   f   19.3 amp  11.9% | I 1.81 pk 2.77 | rms A 1.33 B 1.32 C 0.56 | res -1.00 | flow  88% | ok
+  13.23 sine  RUN   f   22.9 amp  11.9% | I 1.25 pk 2.93 | rms A 1.39 B 1.39 C 0.53 | res -1.00 | flow  85% | ok
+  13.73 sine  RUN   f   26.6 amp  12.1% | I 1.46 pk 3.07 | rms A 1.39 B 1.42 C 0.53 | res -1.00 | flow  88% | ok
+  14.23 sine  RUN   f   30.6 amp  12.3% | I 2.28 pk 3.01 | rms A 1.42 B 1.47 C 0.54 | res -1.00 | flow  89% | ok
+  14.73 sine  RUN   f   34.7 amp  12.7% | I 1.09 pk 2.96 | rms A 1.47 B 1.50 C 0.57 | res -1.00 | flow  90% | ok
+  15.23 sine  RUN   f   39.0 amp  13.2% | I 1.65 pk 2.90 | rms A 1.51 B 1.54 C 0.61 | res -1.00 | flow  93% | ok
+  15.74 sine  RUN   f   43.6 amp  13.3% | I 1.47 pk 2.86 | rms A 1.54 B 1.57 C 0.61 | res -1.00 | flow  95% | ok
+  16.23 sine  RUN   f   48.4 amp  13.6% | I 1.40 pk 2.84 | rms A 1.56 B 1.59 C 0.63 | res -1.00 | flow  95% | ok
+  16.73 sine  RUN   f   53.4 amp  14.1% | I 1.64 pk 2.83 | rms A 1.57 B 1.59 C 0.64 | res -1.00 | flow  95% | ok
+  17.23 sine  RUN   f   58.7 amp  14.5% | I 1.75 pk 2.83 | rms A 1.59 B 1.61 C 0.65 | res -1.00 | flow  95% | ok
+  17.73 sine  RUN   f   64.3 amp  14.8% | I 1.73 pk 2.91 | rms A 1.61 B 1.63 C 0.66 | res -1.00 | flow  95% | ok
+  18.23 sine  RUN   f   70.2 amp  15.3% | I 1.40 pk 3.01 | rms A 1.62 B 1.64 C 0.68 | res -1.00 | flow  95% | ok
+  18.73 sine  RUN   f   76.3 amp  15.6% | I 1.65 pk 3.06 | rms A 1.63 B 1.65 C 0.69 | res -1.00 | flow  96% | ok
+  19.23 sine  RUN   f   82.8 amp  16.3% | I 1.68 pk 3.14 | rms A 1.63 B 1.65 C 0.70 | res -1.00 | flow  96% | ok
+  19.73 sine  RUN   f   89.6 amp  17.0% | I 1.89 pk 3.11 | rms A 1.64 B 1.66 C 0.71 | res -1.00 | flow  96% | ok
+  20.23 sine  RUN   f   96.8 amp  17.1% | I 1.66 pk 3.10 | rms A 1.65 B 1.67 C 0.71 | res -1.00 | flow  97% | ok
+  20.73 sine  RUN   f  104.3 amp  18.0% | I 1.82 pk 3.14 | rms A 1.66 B 1.68 C 0.73 | res -1.00 | flow  97% | ok
+  21.23 sine  RUN   f  112.2 amp  18.8% | I 1.86 pk 3.09 | rms A 1.66 B 1.68 C 0.74 | res -1.00 | flow  98% | ok
+  21.73 sine  RUN   f  120.6 amp  19.3% | I 2.05 pk 3.07 | rms A 1.68 B 1.70 C 0.75 | res -1.00 | flow  98% | ok
+  22.23 sine  RUN   f  129.3 amp  20.1% | I 1.83 pk 3.10 | rms A 1.67 B 1.69 C 0.75 | res -1.00 | flow  98% | ok
+  22.73 sine  RUN   f  138.5 amp  20.9% | I 1.61 pk 3.12 | rms A 1.67 B 1.69 C 0.77 | res -1.00 | flow  98% | ok
+  23.23 sine  RUN   f  148.2 amp  21.9% | I 2.17 pk 3.13 | rms A 1.68 B 1.70 C 0.78 | res -1.00 | flow  99% | ok
+  23.73 sine  RUN   f  158.3 amp  23.1% | I 1.95 pk 3.19 | rms A 1.67 B 1.68 C 0.78 | res -1.00 | flow  99% | ok
+  24.23 sine  RUN   f  169.0 amp  23.5% | I 1.70 pk 3.21 | rms A 1.64 B 1.67 C 0.78 | res -1.00 | flow  99% | ok
+
+>>> stop
+stop
+ok
+RESULT sine: stopped (stop command), max f 180.2 Hz, max |I| sample 3.58 A
+ready
+
+>>> mode svpwm
+mode svpwm
+mode svpwm
+ok
+
+>>> amp 40
+amp 40
+ok
+
+>>> f 200
+f 200
+ok
+
+>>> start
+start
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+start svpwm: amp 40% f 200 Hz ilim 2.0 A
+  29.35 svpwm ALIGN f    0.0 amp  11.0% | I 2.00 pk 1.94 | rms A 1.02 B 0.84 C 0.18 | res -1.00 | flow  68% | ok
+  29.85 svpwm RUN   f    6.8 amp  10.0% | I 0.10 pk 2.71 | rms A 1.19 B 1.24 C 0.49 | res -1.00 | flow  86% | ok
+  30.35 svpwm RUN   f    9.7 amp  10.2% | I 0.32 pk 2.31 | rms A 1.15 B 1.16 C 0.31 | res -1.00 | flow  84% | ok
+  30.85 svpwm RUN   f   12.7 amp  11.2% | I 1.61 pk 2.56 | rms A 1.20 B 1.18 C 0.34 | res -1.00 | flow  86% | ok
+  31.35 svpwm RUN   f   16.0 amp  10.7% | I 1.91 pk 2.79 | rms A 1.32 B 1.33 C 0.44 | res -1.00 | flow  85% | ok
+  31.85 svpwm RUN   f   19.3 amp  12.1% | I 1.65 pk 2.93 | rms A 1.30 B 1.30 C 0.53 | res -1.00 | flow  86% | ok
+  32.35 svpwm RUN   f   22.9 amp  12.0% | I 1.90 pk 2.99 | rms A 1.41 B 1.42 C 0.53 | res -1.00 | flow  88% | ok
+  32.85 svpwm RUN   f   26.6 amp  12.4% | I 1.46 pk 2.98 | rms A 1.39 B 1.40 C 0.54 | res -1.00 | flow  88% | ok
+  33.35 svpwm RUN   f   30.6 amp  12.2% | I 2.14 pk 3.00 | rms A 1.42 B 1.47 C 0.55 | res -1.00 | flow  88% | ok
+  33.85 svpwm RUN   f   34.7 amp  12.7% | I 1.19 pk 2.91 | rms A 1.45 B 1.49 C 0.58 | res -1.00 | flow  89% | ok
+  34.35 svpwm RUN   f   39.0 amp  13.1% | I 1.56 pk 2.88 | rms A 1.50 B 1.53 C 0.61 | res -1.00 | flow  93% | ok
+  34.85 svpwm RUN   f   43.6 amp  13.3% | I 1.58 pk 2.86 | rms A 1.53 B 1.57 C 0.61 | res -1.00 | flow  94% | ok
+  35.35 svpwm RUN   f   48.4 amp  13.7% | I 1.39 pk 2.81 | rms A 1.54 B 1.57 C 0.63 | res -1.00 | flow  95% | ok
+  35.85 svpwm RUN   f   53.4 amp  14.2% | I 1.85 pk 2.80 | rms A 1.57 B 1.60 C 0.65 | res -1.00 | flow  95% | ok
+  36.35 svpwm RUN   f   58.7 amp  14.6% | I 1.97 pk 2.83 | rms A 1.57 B 1.60 C 0.65 | res -1.00 | flow  95% | ok
+  36.85 svpwm RUN   f   64.3 amp  14.9% | I 1.69 pk 2.90 | rms A 1.60 B 1.63 C 0.66 | res -1.00 | flow  95% | ok
+  37.35 svpwm RUN   f   70.2 amp  15.2% | I 1.37 pk 2.94 | rms A 1.61 B 1.64 C 0.68 | res -1.00 | flow  95% | ok
+  37.85 svpwm RUN   f   76.3 amp  15.9% | I 1.71 pk 3.05 | rms A 1.62 B 1.65 C 0.70 | res -1.00 | flow  96% | ok
+  38.35 svpwm RUN   f   82.8 amp  16.4% | I 1.93 pk 3.08 | rms A 1.62 B 1.65 C 0.70 | res -1.00 | flow  96% | ok
+  38.85 svpwm RUN   f   89.6 amp  16.8% | I 1.81 pk 3.11 | rms A 1.64 B 1.67 C 0.72 | res -1.00 | flow  97% | ok
+  39.35 svpwm RUN   f   96.8 amp  17.4% | I 1.59 pk 3.10 | rms A 1.64 B 1.67 C 0.72 | res -1.00 | flow  97% | ok
+  39.85 svpwm RUN   f  104.3 amp  18.1% | I 1.90 pk 3.11 | rms A 1.66 B 1.69 C 0.74 | res -1.00 | flow  97% | ok
+  40.35 svpwm RUN   f  112.2 amp  18.7% | I 1.84 pk 3.09 | rms A 1.66 B 1.69 C 0.75 | res -1.00 | flow  98% | ok
+  40.85 svpwm RUN   f  120.6 amp  19.4% | I 2.15 pk 3.11 | rms A 1.67 B 1.70 C 0.75 | res -1.00 | flow  98% | ok
+  41.35 svpwm RUN   f  129.3 amp  20.1% | I 1.80 pk 3.07 | rms A 1.67 B 1.70 C 0.76 | res -1.00 | flow  98% | ok
+  41.85 svpwm RUN   f  138.5 amp  21.1% | I 1.76 pk 3.10 | rms A 1.66 B 1.69 C 0.77 | res -1.00 | flow  99% | ok
+  42.35 svpwm RUN   f  148.2 amp  21.8% | I 2.15 pk 3.11 | rms A 1.66 B 1.69 C 0.78 | res -1.00 | flow  99% | ok
+  42.85 svpwm RUN   f  158.3 amp  22.8% | I 2.04 pk 3.17 | rms A 1.65 B 1.68 C 0.79 | res -1.00 | flow  99% | ok
+  43.35 svpwm RUN   f  169.0 amp  23.5% | I 1.50 pk 3.18 | rms A 1.62 B 1.66 C 0.78 | res -1.00 | flow  99% | ok
+
+>>> stop
+stop
+ok
+RESULT svpwm: stopped (stop command), max f 179.8 Hz, max |I| sample 3.54 A
+ready
+
+[stop] bridge off
+
+===== 2026-11-18 02:16:26 steps: cmd:raw 10 0 0 cmd:raw 0 10 0 cmd:raw 0 0 10 cmd:raw 0 10 10 cmd:raw 10 0 10 cmd:raw 10 10 0
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> params
+params
+vbus 9.0 V ilim 2.00 A amp 40.0% f 200.0 Hz fstart 4.0 accel 5.0+0.10*f align 500 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode svpwm
+ok
+
+>>> raw 10 0 0
+raw 10 0 0
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  10.0   0.0   0.0 | mean A  +3.36 B  -1.71 C  +0.00 A | flow% A 100 B 100 C   0 | raw done
+ready
+ok
+
+>>> raw 0 10 0
+raw 0 10 0
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW   0.0  10.0   0.0 | mean A  -1.71 B  +3.43 C  +0.00 A | flow% A  99 B  99 C   0 | raw done
+ready
+ok
+
+>>> raw 0 0 10
+raw 0 0 10
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW   0.0   0.0  10.0 | mean A  -0.01 B  +0.00 C  +0.00 A | flow% A   0 B   0 C   0 | raw done
+ready
+ok
+
+>>> raw 0 10 10
+raw 0 10 10
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW   0.0  10.0  10.0 | mean A  -2.59 B  +2.64 C  +0.00 A | flow% A  99 B  99 C   0 | raw done
+ready
+ok
+
+>>> raw 10 0 10
+raw 10 0 10
+CSA: SOC offset 1.009 V out of range -> rebuilt from the other two phases
+RAW  10.0   0.0  10.0 | mean A  +2.59 B  -2.56 C  +0.00 A | flow% A  99 B  99 C   0 | raw done
+ready
+ok
+
+>>> raw 10 10 0
+raw 10 10 0
+CSA: SOC offset 1.010 V out of range -> rebuilt from the other two phases
+RAW  10.0  10.0   0.0 | mean A  +1.65 B  +1.68 C  +0.00 A | flow% A 100 B 100 C   0 | raw done
+ready
+ok
+
+[stop] bridge off
