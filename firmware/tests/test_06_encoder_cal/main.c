@@ -4,12 +4,14 @@
  *
  * Covers:
  *   - AS5600 + I2C1
- *   - DRV8316CT (Hardware Mode)
- *   - TIM1 open-loop alignment vector
+ *   - DRV8316T (Hardware Mode)
+ *   - TIM1 open-loop alignment vector, bottom-clamped (DPWMMIN): with
+ *     DRV8316 pin 35 floating a vector made with all three phases switching
+ *     passes almost no current, so the lowest phase is held at 0 %
  *   - Encoder_Calibrate() sign/offset measurement and flash persistence
  *
- * The rotor must be free to move. The alignment modulation is 0.01, which
- * is ~2.2 A at standstill for this 0.109 ohm motor. Do not raise it.
+ * The rotor must be free to move. The alignment modulation is 0.025 (see
+ * CAL_MOD below for why it cannot be smaller with a 1 us dead time).
  *
  * Expected: the rotor twitches to three electrical positions, then the
  * console prints sign = +/-1, offset in radians, and "saved".
@@ -26,16 +28,30 @@
 #endif
 #define TWO_PI_F                (2.0f * PI_F)
 
-#define CAL_MOD                 0.01f
+/* Alignment modulation for the encoder calibration (peak phase V / Vbus).
+ * The 1 us dead time sets a floor: with DPWMMIN the vector at theta = 0
+ * switches only phase A, at duty 1.5 * mod, and any pulse under 1 us (2 %)
+ * is swallowed by the dead time. 0.01 gave no current at all. Effective
+ * duty is about 1.5 * mod - 0.02:
+ *   0.025 -> 1.75 % -> ~2.6 A on the 0.109 ohm motor at 24 V
+ *                      ~0.4 A on the bring-up drone motor at 9 V
+ * Raise it with USER_DEFS (and FOC_ALIGN_MOD_MAX) if the rotor does not
+ * follow (rc = -3); 0.05 is about 0.8-1 A on the drone motor at 9 V. */
+#ifndef CAL_MOD
+#define CAL_MOD                 0.025f
+#endif
 #define CAL_HOLD_MS             400u
 
+/* mod = peak phase voltage / Vbus. */
 static void apply_vector(float theta, float mod)
 {
-    float a = 0.5f + 0.5f * mod * sinf(theta);
-    float b = 0.5f + 0.5f * mod * sinf(theta - TWO_PI_F / 3.0f);
-    float c = 0.5f + 0.5f * mod * sinf(theta + TWO_PI_F / 3.0f);
+    float d[3];
 
-    Board_SetPwmRaw(c, b, a);
+    Board_DutyDpwmMin(mod * cosf(theta),
+                      mod * cosf(theta - TWO_PI_F / 3.0f),
+                      mod * cosf(theta + TWO_PI_F / 3.0f),
+                      1.0f, d);
+    Board_SetPwmPhases(d[0], d[1], d[2]);
 }
 
 int main(void)
@@ -83,8 +99,8 @@ int main(void)
 
     rc = Encoder_Calibrate(apply_vector, CAL_HOLD_MS, CAL_MOD);
 
-    Board_DrvOutputDisable();
     Board_Tim1StopPwm();
+    Board_BridgeOff();
 
     DBG_Printf("Encoder_Calibrate rc=%d\r\n", rc);
     if (rc == 0)
@@ -102,10 +118,11 @@ int main(void)
     {
         DBG_Puts("  -1 bad callback, -2 AS5600 read failed,\r\n");
         DBG_Puts("  -3 rotor did not follow (mod too small / phase open).\r\n");
-        DBG_Puts("  Check phase wiring and the magnet, then reset to retry.\r\n");
+        DBG_Puts("  Check phase wiring and the magnet, then power-cycle to retry.\r\n");
     }
 
-    DBG_Puts("\r\nThe bridge is now off. Reset to run calibration again,\r\n");
+    DBG_Puts("\r\nThe bridge is now off. Power-cycle (SW4 reset does not work)\r\n");
+    DBG_Puts("to run calibration again,\r\n");
     DBG_Puts("or flash the FOC app to use this calibration.\r\n");
 
     for (;;)

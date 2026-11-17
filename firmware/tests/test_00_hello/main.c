@@ -5,13 +5,15 @@
  * Covers the always-on part of the board:
  *   - 3V3 regulator and MCU boot
  *   - 170 MHz clock tree (HSI16 -> PLL)
- *   - USART1 TX on PB6 / J7.1 (115200 8N1)
- *   - nSLEEP / DRVOFF / nFAULT pin states (hardware strapped DRV8316CT)
+ *   - USB CDC console on the USB-C connector (HSI48 + CRS, no crystal)
+ *   - USART1 TX on PB6 / J7.1 (115200 8N1), used when USB is not open
+ *   - nSLEEP / DRVOFF / nFAULT pin states (hardware strapped DRV8316T)
  *
- * Expected UART output:
+ * Expected console output:
  *   banner, clock frequencies, UID, then a 1 Hz status line.
  *
- * No motor output is enabled. nSLEEP stays low and DRVOFF stays high.
+ * No motor output is enabled. nSLEEP stays low (DRV asleep), DRVOFF stays
+ * low (DRVOFF high would pull nFAULT low), all six gate pins low.
  */
 #include "board.h"
 #include "debug.h"
@@ -23,7 +25,7 @@ int main(void)
     DBG_Puts("\r\n\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Puts(" bldc_control_final_v6  |  test_00_hello\r\n");
-    DBG_Puts(" STM32G431CBT6 + DRV8316CT (Hardware Mode)\r\n");
+    DBG_Puts(" STM32G431CBT6 + DRV8316T (Hardware Mode)\r\n");
     DBG_Puts("==================================================\r\n");
 
     DBG_Printf("build      : %s %s\r\n", __DATE__, __TIME__);
@@ -38,10 +40,11 @@ int main(void)
 
     DBG_Puts("\r\nControl pins:\r\n");
     DBG_Puts("  nSLEEP = PC13 [expected 0 = DRV asleep]\r\n");
-    DBG_Puts("  DRVOFF = PA7  [expected 1 = outputs off]\r\n");
+    DBG_Puts("  DRVOFF = PA7  [expected 0 = idle; bridge is off via INx low]\r\n");
     DBG_Puts("  nFAULT = PA6  [expected 1 = no fault]\r\n");
 
-    DBG_Puts("\r\nIf you can read this, power, clock and UART are good.\r\n");
+    DBG_Puts("\r\nIf you can read this, power, clock and the console are good.\r\n");
+    DBG_Puts("Type 'dfu' on the USB console to reboot into the bootloader.\r\n");
     DBG_Puts("Status line follows once per second.\r\n\r\n");
 
     for (;;)
