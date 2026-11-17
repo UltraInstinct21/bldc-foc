@@ -141,7 +141,7 @@ computed over [Type, Seq, Len, Payload]. Appended as two bytes
 | Offset | Field | Type | Description |
 |---|---|---|---|
 | 0 | flags | uint8 | See TLM flag bits below |
-| 1 | drv_fault | uint8 | DRV8316CT nFAULT state (0 = OK, 1 = fault) |
+| 1 | drv_fault | uint8 | DRV8316T nFAULT state (0 = OK, 1 = fault) |
 | 2 | id_ma | int16 (BE) | Measured d-axis current in milliamps |
 | 4 | iq_ma | int16 (BE) | Measured q-axis current in milliamps |
 | 6 | iq_ref_ma | int16 (BE) | Active iq reference in milliamps |
@@ -165,7 +165,7 @@ computed over [Type, Seq, Len, Payload]. Appended as two bytes
 |---|---|---|
 | 0 | 0x01 | BRIDGE_ENABLED — bridge is active |
 | 1 | 0x02 | ENCODER_VALID — calibration record is valid |
-| 2 | 0x04 | DRV_FAULT — DRV8316CT has an active fault |
+| 2 | 0x04 | DRV_FAULT — DRV8316T has an active fault |
 | 3 | 0x08 | WATCHDOG_TRIP — link watchdog fired since last TLM |
 | 4–7 | — | Reserved |
 
@@ -200,7 +200,7 @@ drive independently of the other.
 | Condition | Action |
 |---|---|
 | No CMD received for 500 ms | iq reference forced to zero; drive stays enabled |
-| No CMD received for 1000 ms | Bridge disabled; DRVOFF asserted |
+| No CMD received for 1000 ms | Bridge disabled: MOE = 0, all INx low (DRVOFF stays low; DRVOFF high would pull nFAULT low) |
 
 The bridge also stays disabled at boot until a CMD frame with the ENABLE
 flag is received. Encoder calibration must be valid before ENABLE is
