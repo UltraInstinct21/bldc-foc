@@ -40,7 +40,18 @@
 #define APP_IQ_MAX_A        4.0f    /* hard limit: CSA saturates at ~4.6 A   */
 #define APP_IQ_RAMP         2.0f    /* A/s ramp toward commanded value        */
 #define APP_RPM_LIMIT       800.0f  /* encoder usable speed ceiling           */
-#define APP_CAL_MOD         0.01f   /* open-loop modulation for calibration   */
+/* Alignment modulation for the encoder calibration (peak phase V / Vbus).
+ * The 1 us dead time sets a floor: with DPWMMIN the vector at theta = 0
+ * switches only phase A, at duty 1.5 * mod, and any pulse under 1 us (2 %)
+ * is swallowed by the dead time. 0.01 gave no current at all. Effective
+ * duty is about 1.5 * mod - 0.02:
+ *   0.025 -> 1.75 % -> ~2.6 A on the 0.109 ohm motor at 24 V
+ *                      ~0.4 A on the bring-up drone motor at 9 V
+ * Raise it with USER_DEFS (and FOC_ALIGN_MOD_MAX) if the rotor does not
+ * follow (rc = -3); 0.05 is about 0.8-1 A on the drone motor at 9 V. */
+#ifndef APP_CAL_MOD
+#define APP_CAL_MOD         0.025f
+#endif
 #define APP_CAL_HOLD_MS     400u
 #define APP_OFFSET_SAMPLES  500u
 #define APP_ENC_ERR_WINDOW  20u     /* errors per 200 ms before stopping      */
@@ -120,10 +131,10 @@ static void start_adc(void)
 static void stop_motor(const char *why)
 {
     FOC_Disable();
-    Board_DrvOutputDisable();
+    Board_BridgeOff();          /* MOE = 0, DRVOFF low (see board.h) */
     s_bridge_enabled = 0u;
     DBG_Printf("STOP: %s\r\n", why);
-    DBG_Puts("Bridge disabled. Reset to run.\r\n");
+    DBG_Puts("Bridge off. Power-cycle or reflash to run again (SW4 reset does not work).\r\n");
     for (;;)
     {
         Board_DelayMs(1000u);
@@ -135,7 +146,7 @@ static void banner(void)
     DBG_Puts("\r\n\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Puts(" bldc_control_final_v6  |  foc_esp\r\n");
-    DBG_Puts(" STM32G431CBT6 + DRV8316CT + AS5600 + ESP32 link\r\n");
+    DBG_Puts(" STM32G431CBT6 + DRV8316T + AS5600 + ESP32 link\r\n");
     DBG_Puts("==================================================\r\n");
     DBG_Printf("build : %s %s\r\n", __DATE__, __TIME__);
     DBG_Printf("SYSCLK: %lu Hz\r\n", (unsigned long)HAL_RCC_GetSysClockFreq());
@@ -168,7 +179,7 @@ static void disable_bridge(void)
     }
     FOC_SetCurrentRef(0.0f, 0.0f);
     FOC_Disable();
-    Board_DrvOutputDisable();
+    Board_BridgeOff();          /* MOE = 0, DRVOFF low (see board.h) */
     s_bridge_enabled = 0u;
     s_iq_cmd = 0.0f;
     DBG_Puts("[link] bridge DISABLED\r\n");
@@ -225,8 +236,8 @@ int main(void)
         DBG_Puts("No encoder calibration. Calibrating (rotor must be free)...\r\n");
         Board_DrvOutputEnable();
         rc = Encoder_Calibrate(FOC_ApplyOpenLoopVector, APP_CAL_HOLD_MS, APP_CAL_MOD);
-        Board_DrvOutputDisable();
         Board_Tim1StopPwm();
+        Board_BridgeOff();
         if (rc != 0)
         {
             DBG_Printf("Encoder_Calibrate rc=%d (see foc/README.md)\r\n", rc);
@@ -247,7 +258,11 @@ int main(void)
     start_adc();
     Board_DelayMs(20u);
     DBG_Puts("Measuring current offsets (bridge off)...\r\n");
-    FOC_CalibrateOffsets(g_adc, APP_OFFSET_SAMPLES);
+    if (FOC_CalibrateOffsets(g_adc, APP_OFFSET_SAMPLES) != 0)
+    {
+        stop_motor("CSA offsets outside 1.3-2.0 V (expect ~1.64 V): "
+                   "is the DRV awake and VM present?");
+    }
     if (!FOC_IsReady())
     {
         stop_motor("offset calibration failed");
@@ -295,7 +310,12 @@ int main(void)
         t_prev = now;
 
         /* ---- DRV fault monitoring --------------------------------------- */
-        if (Board_DrvFault() != 0u)
+        if (Board_StopRequested() != 0u)
+        {
+            stop_motor("stop requested on the USB console");
+        }
+
+        if (Board_DrvFaultDebounced() != 0u)
         {
             (void)DRV8316_ClearFault();
             if (Board_DrvFault() != 0u)

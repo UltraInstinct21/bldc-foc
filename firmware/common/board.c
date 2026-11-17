@@ -1,12 +1,18 @@
 /**
  * @file    board.c
- * @brief   Clock, GPIO and peripheral init for bldc_control_final_v6.
+ * @brief   Clock, GPIO and peripheral init for bldc_control_final_v6 (board v7).
  *
  * Low-level clock enables and pin AFs live in stm32g4xx_hal_msp.c; this
  * file only fills in the HAL handle Init structures and provides the small
- * board-level helpers the tests use.
+ * board-level helpers the tests use. The DRV8316 rules (idle state, fault
+ * clear timing, modulation) are explained in board.h.
  */
 #include "board.h"
+#include "usb_console.h"
+
+#include <stdio.h>
+
+static volatile uint8_t s_stop_requested;
 
 /* HAL handles, shared by every app. */
 UART_HandleTypeDef huart1;
@@ -15,14 +21,21 @@ TIM_HandleTypeDef  htim1;
 ADC_HandleTypeDef  hadc1;
 DMA_HandleTypeDef  hdma_adc1;
 
-#define PLL_M           4u
-#define PLL_N           85u
-#define PLL_R           2u
+#define PLL_N           85u     /* HSI16 / 4 * 85 / 2 = 170 MHz */
 
 static void clock_config(void)
 {
     RCC_OscInitTypeDef osc = {0};
     RCC_ClkInitTypeDef clk = {0};
+
+    /* Start from the reset clock state. After a DFU flash the ROM bootloader
+     * jumps straight into the app with its own clock setup still active; if
+     * that includes the PLL as SYSCLK, HAL_RCC_OscConfig() would refuse to
+     * reprogram it. */
+    if (HAL_RCC_DeInit() != HAL_OK)
+    {
+        Error_Handler();
+    }
 
     HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1_BOOST);
 
@@ -53,6 +66,13 @@ static void clock_config(void)
     }
 }
 
+static void dwt_init(void)
+{
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    DWT->CYCCNT = 0u;
+    DWT->CTRL  |= DWT_CTRL_CYCCNTENA_Msk;
+}
+
 static void gpio_config(void)
 {
     GPIO_InitTypeDef g = {0};
@@ -61,22 +81,33 @@ static void gpio_config(void)
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
 
-    /* Safe defaults before anything becomes an output. */
-    HAL_GPIO_WritePin(DRV_NSLEEP_PORT, DRV_NSLEEP_PIN, GPIO_PIN_RESET); /* asleep */
-    HAL_GPIO_WritePin(DRV_DRVOFF_PORT,  DRV_DRVOFF_PIN,  GPIO_PIN_SET); /* outputs off */
+    /* Safe defaults before anything becomes an output: driver asleep,
+     * DRVOFF low (high would pull nFAULT low, see board.h), all INx low. */
+    HAL_GPIO_WritePin(DRV_NSLEEP_PORT, DRV_NSLEEP_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(DRV_DRVOFF_PORT, DRV_DRVOFF_PIN, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
+
+    /* Gate pins INHx/INLx: driven low until TIM1 takes them over.
+     * INH = INL = 0 is Hi-Z in the DRV8316 6x PWM truth table. */
+    g.Mode  = GPIO_MODE_OUTPUT_PP;
+    g.Pull  = GPIO_PULLDOWN;
+    g.Speed = GPIO_SPEED_FREQ_LOW;
+    g.Pin   = GPIO_PIN_8 | GPIO_PIN_9 | GPIO_PIN_10;
+    HAL_GPIO_Init(GPIOA, &g);
+    g.Pin   = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+    HAL_GPIO_Init(GPIOB, &g);
 
     /* nSLEEP: push-pull, starts low. */
-    g.Pin   = DRV_NSLEEP_PIN;
-    g.Mode  = GPIO_MODE_OUTPUT_PP;
-    g.Pull  = GPIO_NOPULL;
-    g.Speed = GPIO_SPEED_FREQ_LOW;
+    g.Pin  = DRV_NSLEEP_PIN;
+    g.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(DRV_NSLEEP_PORT, &g);
 
-    /* DRVOFF: push-pull, starts high. */
+    /* DRVOFF: push-pull, starts low. */
     g.Pin = DRV_DRVOFF_PIN;
     HAL_GPIO_Init(DRV_DRVOFF_PORT, &g);
 
-    /* nFAULT: open-drain, active low, needs a pull-up. */
+    /* nFAULT: open-drain, active low, R6 5.1k pull-up on the board. */
     g.Pin  = DRV_NFAULT_PIN;
     g.Mode = GPIO_MODE_INPUT;
     g.Pull = GPIO_PULLUP;
@@ -85,12 +116,26 @@ static void gpio_config(void)
 
 void Board_Init(void)
 {
+    /* Must run before any clock setup: a previous "dfu" command left a
+     * magic word in .noinit RAM and reset the chip. */
+    Usb_JumpToBootloaderIfRequested();
+
+    /* Coming from the ROM bootloader (DFU :leave), its USB interrupts may
+     * still be enabled. Keep them off until TinyUSB is initialised. */
+    NVIC_DisableIRQ(USB_HP_IRQn);
+    NVIC_DisableIRQ(USB_LP_IRQn);
+    NVIC_DisableIRQ(USBWakeUp_IRQn);
+    __enable_irq();
+
     HAL_Init();
     clock_config();
+    dwt_init();
     gpio_config();
 
-    /* USART1 TX-only on PB6 for the first banner. PB7 is left free for the
-     * encoder SDA. Board_InitUsart1Link() upgrades this to half-duplex. */
+#if !BOARD_J7_BOOT_STRAP
+    /* USART1 TX-only on PB6: console fallback when no USB host is attached.
+     * PB7 is left free for the encoder SDA. Board_InitUsart1Link() upgrades
+     * this to half-duplex. */
     huart1.Instance          = USART1;
     huart1.Init.BaudRate     = DBG_UART_BAUD;
     huart1.Init.WordLength   = UART_WORDLENGTH_8B;
@@ -106,6 +151,14 @@ void Board_Init(void)
     {
         Error_Handler();
     }
+#endif /* BOARD_J7_BOOT_STRAP: PB6 is tied to BOOT0/PB7, never drive it */
+
+    /* USB CDC console on the USB-C connector (HSI48 + CRS). Give the host
+     * up to 1 s to enumerate and 3 s to open the port, so the boot banner
+     * and one-shot test results are not lost to the UART. The bridge is
+     * off (nSLEEP low, INx low) while waiting. */
+    Usb_Init();
+    Usb_WaitForHost(1000u, 3000u);
 }
 
 void Board_InitI2C1(void)
@@ -130,6 +183,18 @@ void Board_InitI2C1(void)
 void Board_InitUsart1Link(uint32_t baud)
 {
     GPIO_InitTypeDef g = {0};
+
+#if BOARD_J7_BOOT_STRAP
+    /* PB6 is wired to BOOT0 and PB7 on this board: driving it could fight a
+     * 3V3 boot tie and would collide with the AS5600 SDA. Stop here, with the
+     * bridge off and the USB console (and "dfu") still alive. */
+    (void)baud;
+    (void)g;
+    printf("\r\nESP32 link disabled: J7 TX/RX are shorted to BOOT0 on this board\r\n"
+           "(BOARD_J7_BOOT_STRAP=1). Remove the short, then build with\r\n"
+           "USER_DEFS=-DBOARD_J7_BOOT_STRAP=0.\r\n");
+    Error_Handler();
+#endif
 
     /* Re-init the handle in TX+RX mode at the link baud rate. */
     (void)HAL_UART_DeInit(&huart1);
@@ -282,6 +347,48 @@ void Board_SetPwmRaw(float ch1, float ch2, float ch3)
     __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, (uint32_t)(ch3 * (float)period));
 }
 
+void Board_SetPwmPhases(float da, float db, float dc)
+{
+    Board_SetPwmRaw(dc, db, da);
+}
+
+void Board_DutyDpwmMin(float va, float vb, float vc, float vbus, float d[3])
+{
+    float vmin = va;
+    float k    = (vbus > 0.0f) ? (1.0f / vbus) : 0.0f;
+
+    if (vb < vmin) { vmin = vb; }
+    if (vc < vmin) { vmin = vc; }
+
+    d[0] = (va - vmin) * k;
+    d[1] = (vb - vmin) * k;
+    d[2] = (vc - vmin) * k;
+}
+
+void Board_BridgeOff(void)
+{
+    /* Direct register access: safe from any context, even before TIM1 is
+     * initialised. MOE = 0 with OSSI = 1 forces every output to its idle
+     * level (low); the gate pins also have pull-downs. */
+    TIM1->BDTR &= ~TIM_BDTR_MOE;
+    DRV_DRVOFF_PORT->BRR = DRV_DRVOFF_PIN;
+}
+
+void Board_RequestStop(void)
+{
+    s_stop_requested = 1u;
+}
+
+uint8_t Board_StopRequested(void)
+{
+    return s_stop_requested;
+}
+
+void Board_ClearStop(void)
+{
+    s_stop_requested = 0u;
+}
+
 void Board_InitAdc1(void)
 {
     ADC_ChannelConfTypeDef ch = {0};
@@ -355,14 +462,26 @@ uint8_t Board_DrvFault(void)
     return (HAL_GPIO_ReadPin(DRV_NFAULT_PORT, DRV_NFAULT_PIN) == GPIO_PIN_RESET) ? 1u : 0u;
 }
 
+uint8_t Board_DrvFaultDebounced(void)
+{
+    if (Board_DrvFault() == 0u)
+    {
+        return 0u;
+    }
+    Board_DelayMs(2u);
+    return Board_DrvFault();
+}
+
 int Board_DrvClearFault(void)
 {
+    /* tRST: a 20-40 us low pulse resets a latched fault. Longer than about
+     * 120 us puts the driver to sleep instead. After the pulse the driver
+     * needs tWAKE (1 ms); nFAULT was measured low for ~1.8 ms after a wake. */
+    __disable_irq();
     Board_DrvSleep();
-    for (volatile uint32_t i = 0u; i < 1300u; i++)
-    {
-        __NOP();
-    }
+    Board_DelayUs(30u);
     Board_DrvWake();
+    __enable_irq();
     Board_DelayMs(2u);
 
     return (Board_DrvFault() != 0u) ? -1 : 0;
@@ -370,7 +489,8 @@ int Board_DrvClearFault(void)
 
 int Board_DrvInit(void)
 {
-    Board_DelayMs(2u);
+    /* Covers tWAKE + the ~1.8 ms nFAULT low pulse after nSLEEP goes high. */
+    Board_DelayMs(5u);
     if (Board_DrvFault() == 0u)
     {
         return 0;
@@ -378,10 +498,19 @@ int Board_DrvInit(void)
     return Board_DrvClearFault();
 }
 
+/* Console: USB CDC when a host has the port open, otherwise USART1 TX. */
 int _write(int file, char *ptr, int len)
 {
     (void)file;
-    if (len > 0)
+    if (len <= 0)
+    {
+        return len;
+    }
+    if (Usb_Connected() != 0u)
+    {
+        (void)Usb_Write(ptr, len);
+    }
+    else if (huart1.gState != HAL_UART_STATE_RESET)
     {
         (void)HAL_UART_Transmit(&huart1, (uint8_t *)ptr, (uint16_t)len, 100u);
     }
@@ -403,15 +532,50 @@ uint32_t Board_Millis(void)
     return HAL_GetTick();
 }
 
+void Board_Poll(void)
+{
+    Usb_Poll();
+}
+
+/* Overrides the weak HAL version so every blocking delay in the HAL, the
+ * apps and encoder.c keeps the USB console (and its "dfu" command) alive. */
+void HAL_Delay(uint32_t Delay)
+{
+    uint32_t start = HAL_GetTick();
+    uint32_t wait  = Delay;
+
+    if (wait < HAL_MAX_DELAY)
+    {
+        wait += (uint32_t)uwTickFreq;
+    }
+    while ((HAL_GetTick() - start) < wait)
+    {
+        Usb_Poll();
+    }
+}
+
 void Board_DelayMs(uint32_t ms)
 {
     HAL_Delay(ms);
 }
 
+void Board_DelayUs(uint32_t us)
+{
+    uint32_t start = DWT->CYCCNT;
+    uint32_t ticks = us * (SystemCoreClock / 1000000u);
+
+    while ((DWT->CYCCNT - start) < ticks)
+    {
+    }
+}
+
 void Error_Handler(void)
 {
-    __disable_irq();
+    /* Bridge off, then keep servicing USB so "dfu" still works and the
+     * board can be reflashed without the BOOT0 jumper. */
+    Board_BridgeOff();
     for (;;)
     {
+        Usb_Poll();
     }
 }

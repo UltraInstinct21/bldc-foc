@@ -11,7 +11,7 @@ make APP=foc flash
 | File | Role |
 |---|---|
 | `main.c` | Application: init order, calibration, run loop, telemetry |
-| `foc.c` / `foc.h` | Clarke, Park, PI, inverse Park, SVPWM, TIM1 output |
+| `foc.c` / `foc.h` | Clarke, Park, PI, inverse Park, DPWMMIN (or SVPWM), TIM1 output |
 | `encoder.c` / `encoder.h` | Angle tracking, speed, offset calibration, flash record |
 | `as5600.c` / `as5600.h` | Non-blocking AS5600 driver on I2C1 |
 
@@ -21,14 +21,16 @@ For ESP32 WiFi control and telemetry, see the separate `../foc_esp` folder.
 ## Boot sequence
 
 1. `Board_Init()`, I2C1, AS5600, `Encoder_Init()`.
-2. DRV wake, `DRV8316_Init()`. The DRV8316CT is strapped in hardware mode
-   (MODE=6x PWM, GAIN=0.3 V/A, SLEW=125 V/us). No SPI initialization is needed.
+2. DRV wake, `DRV8316_Init()`. The DRV8316T is strapped in hardware mode
+   (MODE=6x PWM, GAIN=0.3 V/A, SLEW=125 V/us, OCP/SR open). No SPI
+   initialization is needed.
 3. TIM1, ADC trigger, `FOC_Init()`, ADC1.
 4. If no valid calibration exists, run `Encoder_Calibrate()` with
    `FOC_ApplyOpenLoopVector` and save the result to flash.
-5. Start the TIM1 counter and ADC DMA, measure zero-current offsets.
+5. Start the TIM1 counter and ADC DMA, measure zero-current offsets. Stop if
+   any offset is outside 1.3–2.0 V (expect 1.64 V).
 6. Prime the encoder tracker with a few blocking samples.
-7. `FOC_Enable()`, then DRVOFF low.
+7. `FOC_Enable()`. DRVOFF is already low, since it stays low at idle too.
 8. Main loop: ramp `iq`, poll nFAULT and encoder errors, print telemetry.
 
 The encoder is primed before enabling the loop because `FOC_ControlISR()` only
@@ -65,11 +67,20 @@ calibration and starts directly. To force a new calibration, flash
 - The encoder I2C error rate exceeds the limit.
 - The encoder produces no valid samples at startup.
 
-On any stop the bridge is disabled and the app idles. Reset to run again.
+- `Ctrl-C` or `ESC` on the USB console.
+
+On any stop the bridge is disabled (MOE = 0, DRVOFF low) and the app idles.
+Power-cycle or reflash to run again, because the SW4 reset button does not
+work.
+
+> **Status:** experimental on the current board. DRV8316 pin 35 is floating,
+> so the modulation is bottom-clamped DPWM, which only partly works. See
+> [`../../docs/control.md`](../../docs/control.md#modulation).
 
 ## Limits
 
 See [`../../docs/control.md`](../../docs/control.md) for the sampling window,
 tuning, protections and known limits. In short: the AS5600 is good to about
-1000 rpm, there is no Vbus sense, and the 0.3 V/A CSA gain limits linear
-current measurement to ±4.6 A (peak current limit 4.0 A in firmware).
+1000 rpm, there is no Vbus sense (`FOC_VBUS` is a constant, default 24 V),
+and at 0.3 V/A the ADC saturates at about ±5.4 A (peak current limit 4.0 A
+in firmware).

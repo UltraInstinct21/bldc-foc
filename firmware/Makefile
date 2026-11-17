@@ -1,5 +1,5 @@
 # ===========================================================================
-#  bldc_control_final_v6  --  STM32G431CBT6 + DRV8316CT
+#  bldc_control_final_v6 (board v7)  --  STM32G431CBT6 + DRV8316T
 #
 #  One target per application. Every app links the same common/ + HAL base
 #  and produces its own .elf/.bin/.hex, so it can be flashed on its own.
@@ -8,12 +8,16 @@
 #      make APP=test_00_hello          build one app (default APP=foc)
 #      make APP=test_07_esp_link       build ESP link test
 #      make APP=foc_esp flash          build and flash FOC + ESP app
+#                                      (USB-C DFU if the board is seen on
+#                                      USB, otherwise ST-Link/SWD)
+#      make APP=foc flash-dfu          force USB DFU
+#      make APP=foc flash-swd          force ST-Link/SWD (OpenOCD)
 #      make apps                       build all apps
 #      make APP=foc size               show flash/RAM usage
 #      make clean
 #
 #  Toolchain: arm-none-eabi-gcc (apt install gcc-arm-none-eabi).
-#  Flashing:  openocd + ST-Link (or override FLASH_CMD).
+#  Flashing:  dfu-util over USB-C (default), or openocd + ST-Link.
 # ===========================================================================
 
 CROSS   ?= arm-none-eabi-
@@ -32,6 +36,8 @@ APPS := test_00_hello \
         test_05_open_loop \
         test_06_encoder_cal \
         test_07_esp_link \
+        test_08_drive_lab \
+        test_09_drv_diag \
         foc \
         foc_esp
 
@@ -49,9 +55,6 @@ else
 APP_DIR   := tests/$(APP)
 # Modules a given test needs from foc/ and foc_esp/
 ifeq ($(APP),test_01_as5600)
-APP_EXTRA := foc/as5600.c
-endif
-ifeq ($(APP),test_05_open_loop)
 APP_EXTRA := foc/as5600.c
 endif
 ifeq ($(APP),test_06_encoder_cal)
@@ -76,8 +79,20 @@ COMMON_SRCS := \
     common/system_stm32g4xx.c \
     common/sysmem.c \
     common/board.c \
+    common/usb_console.c \
+    common/usb_descriptors.c \
     common/stm32g4xx_hal_msp.c \
     common/stm32g4xx_it.c
+
+# TinyUSB 0.17.0 (vendored, MIT): USB CDC console on the USB-C connector.
+TUSB := Middlewares/tinyusb/src
+TUSB_SRCS := \
+    $(TUSB)/tusb.c \
+    $(TUSB)/common/tusb_fifo.c \
+    $(TUSB)/device/usbd.c \
+    $(TUSB)/device/usbd_control.c \
+    $(TUSB)/class/cdc/cdc_device.c \
+    $(TUSB)/portable/st/stm32_fsdev/dcd_stm32_fsdev.c
 
 HAL_SRCS := \
     Drivers/STM32G4xx_HAL_Driver/Src/stm32g4xx_hal.c \
@@ -104,14 +119,21 @@ HAL_SRCS := \
 
 APP_SRCS := $(APP_DIR)/main.c $(APP_EXTRA)
 
-SRCS := $(COMMON_SRCS) $(HAL_SRCS) $(APP_SRCS)
+SRCS := $(COMMON_SRCS) $(TUSB_SRCS) $(HAL_SRCS) $(APP_SRCS)
 OBJS := $(addprefix $(OBJDIR)/,$(addsuffix .o,$(SRCS)))
 DEPS := $(OBJS:.o=.d)
 
 # ---- flags ----------------------------------------------------------------
 MCU     := -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard
-DEFS    := -DSTM32G431xx -DUSE_HAL_DRIVER
-INCS    := -Icommon -Ifoc -Ifoc_esp -I$(APP_DIR) \
+# USER_DEFS passes extra -D options, e.g. USER_DEFS="-DFOC_VBUS=9.0f".
+USER_DEFS ?=
+# USER_VECT_TAB_ADDRESS: SystemInit() sets VTOR = 0x08000000. Required: after
+# "dfu-util ... :leave" the ROM bootloader jumps into the app without a reset,
+# so VTOR would still point at the bootloader's vector table (0x1FFF0000).
+# The verified bring-up firmware was built with this flag too.
+DEFS    := -DSTM32G431xx -DUSE_HAL_DRIVER -DUSER_VECT_TAB_ADDRESS \
+           -DAPP_NAME=\"$(APP)\" $(USER_DEFS)
+INCS    := -Icommon -Ifoc -Ifoc_esp -I$(APP_DIR) -I$(TUSB) \
            -IDrivers/STM32G4xx_HAL_Driver/Inc \
            -IDrivers/STM32G4xx_HAL_Driver/Inc/Legacy \
            -IDrivers/CMSIS/Device/ST/STM32G4xx/Include \
@@ -122,16 +144,20 @@ CFLAGS  := $(MCU) $(DEFS) $(INCS) -O2 -g3 \
            -ffunction-sections -fdata-sections -fno-common -MMD -MP
 ASFLAGS := $(MCU) $(DEFS) $(INCS) -g3
 LDFLAGS := $(MCU) --specs=nano.specs --specs=nosys.specs \
-           -Wl,--gc-sections -Wl,--print-memory-usage \
+           -Wl,--gc-sections -Wl,--print-memory-usage -Wl,--no-warn-rwx-segments \
            -Wl,-u,_printf_float -lm
 
 # ---- flashing -------------------------------------------------------------
+# tools/flash.py picks USB-C DFU when the board is on USB (running app or ROM
+# DFU), otherwise falls back to OpenOCD + ST-Link on J5.
+PYTHON      ?= python3
+FLASH_MODE  ?= auto
 OPENOCD     ?= openocd
 OOCD_INTERFACE ?= interface/stlink.cfg
 OOCD_TARGET    ?= target/stm32g4x.cfg
 
 # ===========================================================================
-.PHONY: all apps flash size clean help list
+.PHONY: all apps flash flash-dfu flash-swd size clean help list
 
 all: $(TARGET).elf $(TARGET).bin $(TARGET).hex
 
@@ -159,9 +185,15 @@ apps:
 	    $(MAKE) --no-print-directory APP=$$a all || exit 1; \
 	done
 
-flash: $(TARGET).elf
-	$(OPENOCD) -f $(OOCD_INTERFACE) -f $(OOCD_TARGET) \
-	    -c "program $< verify reset exit"
+flash: $(TARGET).elf $(TARGET).bin
+	$(PYTHON) tools/flash.py --mode $(FLASH_MODE) --bin $(TARGET).bin --elf $(TARGET).elf \
+	    --openocd "$(OPENOCD)" --interface $(OOCD_INTERFACE) --target $(OOCD_TARGET)
+
+flash-dfu:
+	@$(MAKE) --no-print-directory APP=$(APP) FLASH_MODE=dfu flash
+
+flash-swd:
+	@$(MAKE) --no-print-directory APP=$(APP) FLASH_MODE=swd flash
 
 size: $(TARGET).elf
 	@$(SIZE) $(TARGET).elf
@@ -174,10 +206,11 @@ clean:
 	rm -rf $(BUILD)
 
 help:
-	@echo "bldc_control_final_v6 firmware"
+	@echo "bldc_control_final_v6 (board v7) firmware"
 	@echo
 	@echo "  make APP=<app>          build one app (default: foc)"
-	@echo "  make APP=<app> flash    build + flash with OpenOCD/ST-Link"
+	@echo "  make APP=<app> flash    build + flash (USB-C DFU if seen, else ST-Link)"
+	@echo "  make APP=<app> flash-dfu / flash-swd   force one method"
 	@echo "  make apps               build every app"
 	@echo "  make APP=<app> size     show flash/RAM usage"
 	@echo "  make list               list app names"

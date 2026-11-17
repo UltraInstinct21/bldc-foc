@@ -39,7 +39,7 @@ static const char WEB_PAGE[] PROGMEM = R"rawhtml(
 </head>
 <body>
 <h1>BLDC-FOC Motor Control</h1>
-<p class="sub">STM32G431CB + DRV8316CT | ESP32 WiFi Bridge | 24 V / 4 A max</p>
+<p class="sub">STM32G431CB + DRV8316T | ESP32 WiFi Bridge | 24 V / 4 A max</p>
 
 <div class="link-bar">
   <span>Link</span>
