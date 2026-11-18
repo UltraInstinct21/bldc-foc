@@ -184,6 +184,13 @@ python3 tools/lab.py --log ../docs/results/run.log \
     "check:amp 30.0%" "check:ilim 4.50" "check:f 290.0 Hz" spin:22
 ```
 
+Machine protocol for the UI backend (`backend/`): `tel <ms>` streams `@T`
+telemetry, every command is acknowledged with `@P` (all parameters), `snap [n]`
+dumps a live waveform from the 20 kHz trace (`@W`/`@w`), `csa` re-measures the
+offsets (`@C`), `hello` identifies the firmware (`@H`); runs end with `@R`,
+`raw` with `@RAW`, `rl` with `@RL`. The console queues up to 4 lines and
+`echo off` stops keystroke echo. Human output is unchanged.
+
 Limits: `amp` ≤ `ampmax` (default 60 %, `set ampmax` up to 95 % for runs with
 series resistors only), `ilim` ≤ 4.5 A, overcurrent trip fixed at 5.3 A,
 `f`/`fstart` down to 0.05 Hz (3.3 s per 6-step step).

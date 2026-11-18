@@ -26,8 +26,13 @@ static volatile uint32_t s_boot_request __attribute__((section(".noinit")));
 static uint8_t s_ready;
 static char    s_line[64];
 static uint8_t s_line_len;
-static char    s_cmd[64];               /* last complete line for the app */
-static volatile uint8_t s_cmd_ready;
+/* Complete lines waiting for the app. A queue, not a single slot: a host
+ * program (the UI backend) may send several commands back to back, and a
+ * single slot silently dropped every line after the first. */
+#define CMD_Q_LEN           4u
+static char    s_cmdq[CMD_Q_LEN][64];
+static volatile uint8_t s_cmd_head, s_cmd_tail;  /* head = next read */
+static uint8_t s_echo = 1u;             /* "echo off": host programs */
 
 void Usb_JumpToBootloaderIfRequested(void)
 {
@@ -128,13 +133,30 @@ static void handle_char(char c)
         {
             reboot_to_dfu();
         }
+        if ((strcmp(s_line, "echo off") == 0) || (strcmp(s_line, "echo on") == 0))
+        {
+            /* Handled here: echoed keystrokes could land in the middle of a
+             * machine-readable line the app is printing. */
+            s_echo = (s_line[6] == 'n') ? 1u : 0u;
+            s_line_len = 0u;
+            return;
+        }
         if (s_line_len != 0u)
         {
-            (void)Usb_Write("\r\n", 2);
-            if (s_cmd_ready == 0u)
+            uint8_t next = (uint8_t)((s_cmd_tail + 1u) % CMD_Q_LEN);
+
+            if (s_echo != 0u)
             {
-                memcpy(s_cmd, s_line, (uint32_t)s_line_len + 1u);
-                s_cmd_ready = 1u;
+                (void)Usb_Write("\r\n", 2);
+            }
+            if (next != s_cmd_head)
+            {
+                memcpy(s_cmdq[s_cmd_tail], s_line, (uint32_t)s_line_len + 1u);
+                s_cmd_tail = next;
+            }
+            else
+            {
+                (void)Usb_Write("[console] command queue full, line dropped\r\n", 44);
             }
         }
         s_line_len = 0u;
@@ -144,7 +166,10 @@ static void handle_char(char c)
     if ((c >= ' ') && (c <= '~') && (s_line_len < (sizeof(s_line) - 1u)))
     {
         s_line[s_line_len++] = c;
-        (void)Usb_Write(&c, 1);         /* echo */
+        if (s_echo != 0u)
+        {
+            (void)Usb_Write(&c, 1);     /* echo */
+        }
     }
 }
 
@@ -210,13 +235,13 @@ void Usb_WaitForHost(uint32_t mount_ms, uint32_t open_ms)
 
 uint8_t Usb_GetLine(char *buf, uint32_t size)
 {
-    if ((s_cmd_ready == 0u) || (buf == NULL) || (size == 0u))
+    if ((s_cmd_head == s_cmd_tail) || (buf == NULL) || (size == 0u))
     {
         return 0u;
     }
-    strncpy(buf, s_cmd, size - 1u);
+    strncpy(buf, s_cmdq[s_cmd_head], size - 1u);
     buf[size - 1u] = '\0';
-    s_cmd_ready = 0u;
+    s_cmd_head = (uint8_t)((s_cmd_head + 1u) % CMD_Q_LEN);
     return 1u;
 }
 

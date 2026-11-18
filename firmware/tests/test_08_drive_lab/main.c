@@ -27,6 +27,13 @@
  * bounded by ilim; trip at min(2*ilim, 5.3 A) filtered for 20 ms; nFAULT
  * (2 ms) stops; "voltage without current" interlock in open loop; ESC/Ctrl-C
  * or "stop" at any time. Type "help" on the console.
+ *
+ * Machine protocol (for the UI backend, backend/): lines that start with '@'
+ * carry one JSON object and sit alongside the human output.
+ *   @H hello   @T telemetry ("tel <ms>")   @P parameters (after every command)
+ *   @R run result   @RAW raw result   @RL R/L result   @C CSA offsets
+ *   @W + @w rows    waveform snapshot from the 20 kHz trace ("snap [n]")
+ * See docs/ui_plan.md.
  */
 #include "board.h"
 #include "debug.h"
@@ -95,6 +102,8 @@ static uint8_t p_vrec   = 1u;
 static uint8_t p_dtc    = 1u;
 static Mod   p_focmod   = M_DPWM;
 static uint32_t p_log   = 500u;     /* ms                                    */
+static uint32_t p_tel   = 0u;       /* ms between @T lines, 0 = off          */
+#define PROTO_VERSION 1
 
 /* ---- shared with the ISR ------------------------------------------------- */
 static volatile uint16_t g_dma[ADC_BUF_LEN];
@@ -125,6 +134,9 @@ typedef struct {
     uint32_t nfl[3];                 /* valid samples with |i| > 0.1 A       */
 } Stats;
 static volatile Stats s_st;
+static volatile Stats s_tst;            /* same, for @T (reset by telemetry) */
+static volatile float s_inow[3];        /* last sample, rebuilt phases, A    */
+static volatile float s_iidle[3];       /* filtered SOx current while idle   */
 
 /* FOC */
 typedef struct { float kp, ki, integ; } Pi;
@@ -279,10 +291,9 @@ static void bridge_stop(const char *why)
 }
 
 /* ---- per-sample feedback ------------------------------------------------- */
-static void stats_add(const float ir[3], const float i[3], uint8_t all_valid,
-                      const uint8_t valid[3])
+static void stats_add1(Stats *st, const float ir[3], const float i[3], uint8_t all_valid,
+                       const uint8_t valid[3])
 {
-    Stats *st = (Stats *)&s_st;
     float mag2 = 0.0f;
 
     st->n++;
@@ -308,6 +319,13 @@ static void stats_add(const float ir[3], const float i[3], uint8_t all_valid,
         st->res_sq += r * r;
         st->n_res++;
     }
+}
+
+static void stats_add(const float ir[3], const float i[3], uint8_t all_valid,
+                      const uint8_t valid[3])
+{
+    stats_add1((Stats *)&s_st, ir, i, all_valid, valid);
+    stats_add1((Stats *)&s_tst, ir, i, all_valid, valid);
 }
 
 /* ---- FOC helpers ---------------------------------------------------------- */
@@ -672,6 +690,11 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
     }
     if (st == S_IDLE)
     {
+        for (uint32_t k = 0u; k < 3u; k++)
+        {
+            s_iidle[k] += 0.002f * (ir[k] - s_iidle[k]);    /* ~80 ms */
+            s_inow[k] = ir[k];
+        }
         return;
     }
     tick1ms = (++div >= 20u) ? 1u : 0u;
@@ -715,6 +738,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
         i[mx] = -(i[(mx + 1u) % 3u] + i[(mx + 2u) % 3u]);
     }
     stats_add(ir, i, all_valid, valid);
+    s_inow[0] = i[0]; s_inow[1] = i[1]; s_inow[2] = i[2];
 
     static uint32_t trd;
     if ((s_tr_frozen == 0u) && (++trd >= p_trdec))
@@ -910,6 +934,10 @@ static uint8_t csa_offsets(void)
                    (int)('A' + s_bad_ph), (double)(s_off[s_bad_ph] * lsb));
         }
     }
+    printf("@C {\"off\":[%.4f,%.4f,%.4f],\"ok\":[%u,%u,%u],\"bad\":%d,\"valid\":%u}\r\n",
+           (double)(s_off[0] * lsb), (double)(s_off[1] * lsb), (double)(s_off[2] * lsb),
+           (unsigned)s_ph_ok[0], (unsigned)s_ph_ok[1], (unsigned)s_ph_ok[2],
+           (int)s_bad_ph, (unsigned)ok);
     return ok;
 }
 
@@ -917,6 +945,7 @@ static void stats_reset(void)
 {
     __disable_irq();
     memset((void *)&s_st, 0, sizeof(s_st));
+    memset((void *)&s_tst, 0, sizeof(s_tst));
     __enable_irq();
 }
 
@@ -989,6 +1018,15 @@ static void start_raw(float a, float b, float c)
                (unsigned long)(st.nv[1] ? 100u * st.nfl[1] / st.nv[1] : 0u),
                (unsigned long)(st.nv[2] ? 100u * st.nfl[2] / st.nv[2] : 0u),
                s_stop_reason ? s_stop_reason : "");
+        printf("@RAW {\"d\":[%.1f,%.1f,%.1f],\"mean\":[%.3f,%.3f,%.3f],\"flow\":[%lu,%lu,%lu],\"why\":\"%s\"}\r\n",
+               (double)a, (double)b, (double)c,
+               (double)(st.nv[0] ? st.sum[0] / (float)st.nv[0] : 0.0f),
+               (double)(st.nv[1] ? st.sum[1] / (float)st.nv[1] : 0.0f),
+               (double)(st.nv[2] ? st.sum[2] / (float)st.nv[2] : 0.0f),
+               (unsigned long)(st.nv[0] ? 100u * st.nfl[0] / st.nv[0] : 0u),
+               (unsigned long)(st.nv[1] ? 100u * st.nfl[1] / st.nv[1] : 0u),
+               (unsigned long)(st.nv[2] ? 100u * st.nfl[2] / st.nv[2] : 0u),
+               s_stop_reason ? s_stop_reason : "");
     }
 }
 
@@ -1027,12 +1065,17 @@ static void start_rl(void)
         if ((Ls[0] > 0.0f) && (Ls[1] > 0.0f)) { p_L = 0.5f * (Ls[0] + Ls[1]); }
         else if (Ls[1] > 0.0f) { p_L = Ls[1]; }
         printf("RL: using R = %.4f ohm, L = %.1f uH\r\n", (double)p_R, (double)(p_L * 1e6f));
+        printf("@RL {\"ok\":1,\"R\":%.5f,\"L1k\":%.2f,\"L2k\":%.2f,\"L\":%.2f,\"v\":[%.4f,%.4f],\"i\":[%.3f,%.3f]}\r\n",
+               (double)R, (double)(Ls[0] * 1e6f), (double)(Ls[1] * 1e6f), (double)(p_L * 1e6f),
+               (double)s_rl_v[0], (double)s_rl_v[1], (double)s_rl_i[0], (double)s_rl_i[1]);
     }
     else
     {
         printf("RL failed (%s, stage %u, i %.2f/%.2f A)\r\n",
                s_stop_reason ? s_stop_reason : "?", (unsigned)s_rl_stage,
                (double)s_rl_i[0], (double)s_rl_i[1]);
+        printf("@RL {\"ok\":0,\"why\":\"%s\",\"stage\":%u}\r\n",
+               s_stop_reason ? s_stop_reason : "?", (unsigned)s_rl_stage);
     }
 }
 
@@ -1134,6 +1177,103 @@ static void trace_dump(uint32_t n)
     }
 }
 
+/* ---- machine protocol ------------------------------------------------------ */
+static const char *const k_state[] = { "idle", "align", "run", "raw", "rl", "foc" };
+
+static void tel_line(void)
+{
+    Stats st;
+    float rms[3], res, th, d0, d1, d2;
+    uint32_t n;
+    State now = s_state;
+    const float lsb = 3.3f / 4095.0f;
+
+    __disable_irq();
+    memcpy(&st, (const void *)&s_tst, sizeof(st));
+    memset((void *)&s_tst, 0, sizeof(s_tst));
+    d0 = s_d_app[0]; d1 = s_d_app[1]; d2 = s_d_app[2];
+    __enable_irq();
+    n = (st.n > 0u) ? st.n : 1u;
+    for (uint32_t k = 0u; k < 3u; k++) { rms[k] = sqrtf(st.sq[k] / (float)n); }
+    res = (st.n_res > 0u) ? sqrtf(st.res_sq / (float)st.n_res) : -1.0f;
+    th = (now == S_FOC) ? ((s_obs_on != 0u) ? s_th_pll : s_theta_ol) : s_theta;
+
+    /* one printf per group keeps each call short; the line ends only once */
+    printf("@T {\"t\":%lu,\"st\":\"%s\",\"mod\":\"%s\",\"kind\":\"%s\",\"obs\":%u,\"ms\":%lu,",
+           (unsigned long)Board_Millis(), k_state[now], k_mod[s_mod],
+           (s_kind == F_IF) ? "if" : "sl", (unsigned)s_obs_on, (unsigned long)s_state_ms);
+    printf("\"f\":%.2f,\"fol\":%.2f,\"fpll\":%.2f,\"amp\":%.2f,\"cap\":%.2f,\"ifilt\":%.3f,",
+           (double)s_freq, (double)s_f_ol, (double)(s_wf / TWO_PI_F),
+           (double)s_amp_app, (double)s_cap, (double)s_ifilt);
+    printf("\"i\":[%.3f,%.3f,%.3f],\"iidle\":[%.3f,%.3f,%.3f],\"rms\":[%.3f,%.3f,%.3f],\"pk\":[%.3f,%.3f,%.3f],",
+           (double)s_inow[0], (double)s_inow[1], (double)s_inow[2],
+           (double)s_iidle[0], (double)s_iidle[1], (double)s_iidle[2],
+           (double)rms[0], (double)rms[1], (double)rms[2],
+           (double)st.pk[0], (double)st.pk[1], (double)st.pk[2]);
+    printf("\"res\":%.3f,\"flow\":%lu,\"drop\":%lu,\"id\":%.3f,\"iq\":%.3f,\"idr\":%.3f,\"iqr\":%.3f,"
+           "\"vd\":%.3f,\"vq\":%.3f,\"lam\":%.6f,\"lamu\":%.6f,",
+           (double)res, (unsigned long)(100u * st.n_flow / n),
+           (unsigned long)((now == S_FOC) ? (100u * s_dropouts / n) : 0u),
+           (double)s_id, (double)s_iq, (double)s_idr, (double)s_iqr,
+           (double)s_vd, (double)s_vq, (double)s_lam_est, (double)s_lam_use);
+    printf("\"d\":[%.4f,%.4f,%.4f],\"step\":%d,\"th\":%.1f,\"tho\":%.1f,\"nf\":%u,\"fmax\":%.2f,\"imax\":%.3f,",
+           (double)d0, (double)d1, (double)d2, (s_step < 6u) ? (int)s_step : -1,
+           (double)(th * (360.0f / TWO_PI_F)), (double)(s_th_obs * (360.0f / TWO_PI_F)),
+           (unsigned)Board_DrvFault(), (double)s_fmax_seen, (double)s_imax_seen);
+    printf("\"off\":[%.4f,%.4f,%.4f],\"bad\":%d,\"stop\":\"%s\"}\r\n",
+           (double)(s_off[0] * lsb), (double)(s_off[1] * lsb), (double)(s_off[2] * lsb),
+           (int)s_bad_ph, s_stop_reason ? s_stop_reason : "");
+}
+
+static void emit_params(void)
+{
+    printf("@P {\"vbus\":%.2f,\"ilim\":%.3f,\"amp\":%.2f,\"ampmax\":%.1f,\"f\":%.2f,\"fstart\":%.3f,"
+           "\"acc0\":%.3f,\"acc1\":%.4f,\"align\":%lu,\"mode\":\"%s\",",
+           (double)p_vbus, (double)p_ilim, (double)p_amp, (double)p_ampmax, (double)p_f,
+           (double)p_fstart, (double)p_acc0, (double)p_acc1, (unsigned long)p_align, k_mod[s_mod]);
+    printf("\"R\":%.5f,\"L\":%.3f,\"lam\":%.6f,\"bw\":%.1f,\"ifa\":%.3f,\"fsw\":%.2f,"
+           "\"kps\":%.4f,\"kis\":%.4f,\"pll\":%.1f,\"idsl\":%.3f,",
+           (double)p_R, (double)(p_L * 1e6f), (double)p_lam, (double)p_bw, (double)p_ifa,
+           (double)p_fsw, (double)p_kps, (double)p_kis, (double)p_pll, (double)p_idsl);
+    printf("\"vrec\":%u,\"dtc\":%u,\"focmod\":\"%s\",\"trdec\":%lu,\"log\":%lu,\"tel\":%lu}\r\n",
+           (unsigned)p_vrec, (unsigned)p_dtc, k_mod[p_focmod], (unsigned long)p_trdec,
+           (unsigned long)p_log, (unsigned long)p_tel);
+}
+
+static void hello(void)
+{
+    printf("@H {\"app\":\"test_08_drive_lab\",\"proto\":%d,\"fs\":%.0f,\"csa\":%.3f,"
+           "\"itrip\":%.2f,\"trn\":%lu,\"built\":\"%s %s\"}\r\n",
+           PROTO_VERSION, (double)FS_HZ, (double)DRV8316_CSA_V_PER_A, (double)I_TRIP_MAX,
+           (unsigned long)TR_N, __DATE__, __TIME__);
+}
+
+/* Waveform snapshot from the trace ring, also while running: recording pauses
+ * only for the copy-out. Rows: iA iB iC [mA] dA dB dC [0.1 %] theta theta_obs
+ * [0.1 deg] valid-bits nFAULT. */
+static void snap(uint32_t n)
+{
+    uint8_t was = s_tr_frozen;
+    uint32_t end;
+
+    if (n > TR_N) { n = TR_N; }
+    if (n == 0u)  { n = 256u; }
+    s_tr_frozen = 1u;
+    end = s_tr_pos;
+    if (end < n) { n = end; }
+    printf("@W {\"n\":%lu,\"dt_us\":%lu,\"st\":\"%s\",\"frozen\":%u}\r\n",
+           (unsigned long)n, (unsigned long)(50u * p_trdec), k_state[s_state], (unsigned)was);
+    for (uint32_t k = end - n; k != end; k++)
+    {
+        const Tr *t = &s_tr[k & (TR_N - 1u)];
+        printf("@w %d %d %d %u %u %u %u %u %u %u\r\n", t->i[0], t->i[1], t->i[2],
+               t->d[0], t->d[1], t->d[2], t->th, t->tho, (unsigned)t->sec, (unsigned)t->nf);
+    }
+    printf("@W {\"end\":1}\r\n");
+    /* resume unless the trace holds the samples before a stop */
+    if ((was == 0u) || (s_state != S_IDLE)) { s_tr_frozen = 0u; }
+}
+
 static void help(void)
 {
     printf("commands:\r\n"
@@ -1147,7 +1287,8 @@ static void help(void)
            "  set R|L|lam|bw|ifa|fsw|kps|kis|dtc|focmod <value>   (L in uH)\r\n"
            "  set ampmax <%%>               amp ceiling, default 60, up to 95 (series resistors only)\r\n"
            "  trace [n]                    last n samples before the last stop\r\n"
-           "  log <ms> | params | help | dfu | ESC = stop\r\n");
+           "  log <ms> | params | help | dfu | ESC = stop\r\n"
+           "  tel <ms> | hello | csa | snap [n]   machine protocol (@ lines, UI backend)\r\n");
 }
 
 static void params(void)
@@ -1203,6 +1344,14 @@ static void command(char *line)
     else if (!strcmp(argv[0], "align"))  { p_align = (uint32_t)clampf(ARGF(1), 0.0f, 5000.0f); }
     else if (!strcmp(argv[0], "accel"))  { p_acc0 = ARGF(1); p_acc1 = ARGF(2); }
     else if (!strcmp(argv[0], "log"))    { p_log = (uint32_t)clampf(ARGF(1), 50.0f, 10000.0f); }
+    else if (!strcmp(argv[0], "tel"))    { p_tel = (ARGF(1) <= 0.0f) ? 0u : (uint32_t)clampf(ARGF(1), 20.0f, 10000.0f); }
+    else if (!strcmp(argv[0], "hello"))  { hello(); }
+    else if (!strcmp(argv[0], "snap"))   { snap((argc > 1) ? (uint32_t)ARGF(1) : 256u); }
+    else if (!strcmp(argv[0], "csa"))
+    {
+        if (s_state != S_IDLE) { printf("stop first\r\n"); }
+        else                   { (void)csa_offsets(); }
+    }
     else if (!strcmp(argv[0], "set") && (argc == 3))
     {
         const char *k = argv[1];
@@ -1230,6 +1379,7 @@ static void command(char *line)
         else { printf("unknown parameter\r\n"); }
     }
     else { printf("? (help)\r\n"); }
+    emit_params();                      /* acknowledges every command */
     if (s_state == S_IDLE) { printf("ok\r\n"); }
 #undef ARGF
 }
@@ -1237,7 +1387,7 @@ static void command(char *line)
 int main(void)
 {
     char line[64];
-    uint32_t t_log;
+    uint32_t t_log, t_tel;
     State prev = S_IDLE;
 
     Board_Init();
@@ -1267,6 +1417,7 @@ int main(void)
     help();
     printf("ready\r\n");
     t_log = Board_Millis();
+    t_tel = t_log;
 
     for (;;)
     {
@@ -1282,6 +1433,11 @@ int main(void)
             command(line);
             t_log = Board_Millis();
         }
+        if ((p_tel != 0u) && ((Board_Millis() - t_tel) >= p_tel))
+        {
+            t_tel = Board_Millis();
+            tel_line();
+        }
         if ((now != S_IDLE) && (now != S_RAW) && (now != S_RL) &&
             ((Board_Millis() - t_log) >= p_log))
         {
@@ -1292,6 +1448,9 @@ int main(void)
         {
             printf("RESULT %s: stopped (%s), max f %.1f Hz, max |I| sample %.2f A\r\n",
                    (prev == S_FOC) ? ((s_kind == F_IF) ? "I/f" : "sensorless") : k_mod[s_mod],
+                   s_stop_reason ? s_stop_reason : "?", (double)s_fmax_seen, (double)s_imax_seen);
+            printf("@R {\"kind\":\"%s\",\"why\":\"%s\",\"fmax\":%.2f,\"imax\":%.3f}\r\n",
+                   (prev == S_FOC) ? ((s_kind == F_IF) ? "if" : "sl") : k_mod[s_mod],
                    s_stop_reason ? s_stop_reason : "?", (double)s_fmax_seen, (double)s_imax_seen);
             printf("ready\r\n");
         }

@@ -22,3 +22,9 @@ datasheets/
 
 # Python
 __pycache__/
+.venv/
+
+# Motor-control UI
+frontend/node_modules/
+frontend/dist/
+backend/recordings/

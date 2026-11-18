@@ -29,8 +29,17 @@ links the same board layer and is flashed on its own.
 | `esp32/` | Arduino sketch and web app for external ESP32 WiFi bridge |
 | `hardware/` | KiCad schematic and PCB for board revision v7 (files named `_v6`) |
 | `docs/` | Hardware, motor, control, bring-up, and ESP32 interface documentation |
+| `backend/` | Python (FastAPI) bridge between the board's USB console and the UI |
+| `frontend/` | React + shadcn motor-control UI (drive, scope, tests, parameters, console) |
 
 ## Quick start
+
+### Motor-control UI
+Flash the drive lab once (`cd firmware && make APP=test_08_drive_lab flash`),
+then run `./run_ui.sh` and open <http://127.0.0.1:8000>. `./run_ui.sh --sim`
+runs the whole UI against a simulated board. Details:
+[`docs/ui_plan.md`](docs/ui_plan.md), [`backend/README.md`](backend/README.md),
+[`frontend/README.md`](frontend/README.md).
 
 ### STM32 firmware
 Requirements: `arm-none-eabi-gcc` and `dfu-util`, plus a USB-C cable

@@ -14,6 +14,11 @@
  *                  so the next flash needs no BOOT0 jumper (tools/flash.py
  *                  sends this automatically)
  *   Ctrl-C / ESC   immediate bridge off (MOE = 0); see Board_StopRequested()
+ *   echo off|on    stop/resume echoing typed characters (for host programs
+ *                  such as the UI backend; not passed to the app)
+ *
+ * Up to 4 complete lines are queued for Usb_GetLine(), so a host program may
+ * send commands back to back.
  */
 #ifndef USB_CONSOLE_H
 #define USB_CONSOLE_H
