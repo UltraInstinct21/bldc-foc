@@ -174,8 +174,24 @@ make APP=test_08_drive_lab flash
 python3 tools/lab.py --log ../docs/results/run.log raw 6step sine svpwm dpwm rl if
 ```
 
-Results of the first run on the board, with explanations, are in
-[`docs/results/2026-11-18_drive_lab.md`](../../docs/results/2026-11-18_drive_lab.md).
+Scripted runs load their settings with `cmd:` steps, confirm them with
+`check:` steps (settings live in RAM and are lost if the board resets), then
+start with `spin:<seconds>`:
+
+```sh
+python3 tools/lab.py --log ../docs/results/run.log \
+    "cmd:mode 6step" "cmd:amp 30" "cmd:ilim 4.5" "cmd:f 290" \
+    "check:amp 30.0%" "check:ilim 4.50" "check:f 290.0 Hz" spin:22
+```
+
+Limits: `amp` ≤ `ampmax` (default 60 %, `set ampmax` up to 95 % for runs with
+series resistors only), `ilim` ≤ 4.5 A, overcurrent trip fixed at 5.3 A,
+`f`/`fstart` down to 0.05 Hz (3.3 s per 6-step step).
+
+Results, with explanations:
+[`docs/results/2026-11-18_drive_lab.md`](../../docs/results/2026-11-18_drive_lab.md) (pin 35 floating),
+[`docs/results/2026-11-19_rework_and_printed_motor.md`](../../docs/results/2026-11-19_rework_and_printed_motor.md)
+(pin 35/36 grounded, 3D-printed motor).
 In short, with DRV8316 pin 35 floating: 6-step and DPWM run, sine and SVPWM
 pass no current, I/f current control on SOx works to ~43 Hz, and sensorless
 FOC locks and runs briefly but loses conduction above ~40 Hz.

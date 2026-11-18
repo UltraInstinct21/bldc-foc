@@ -1,0 +1,914 @@
+
+===== 2026-11-18 23:20:53 printed motor, 68 ohm per phase: checks + settings (no start)
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 40
+amp 40
+ok
+
+>>> ilim 0.5
+ilim 0.5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 1 0.05
+accel 1 0.05
+ok
+
+>>> align 1000
+align 1000
+ok
+
+>>> f 10
+f 10
+ok
+
+>>> log 500
+log 500
+ok
+
+>>> params
+params
+vbus 9.0 V ilim 0.50 A amp 40.0% f 10.0 Hz fstart 1.0 accel 1.0+0.05*f align 1000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+===== 2026-11-18 23:27:06 printed motor, 68 ohm per phase: first spin, 6step, f 10 Hz
+
+>>> params
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+params
+vbus 9.0 V ilim 2.00 A amp 40.0% f 200.0 Hz fstart 4.0 accel 5.0+0.10*f align 500 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.497 V out of range -> rebuilt from the other two phases
+start 6step: amp 40% f 200 Hz ilim 2.0 A
+  20.35 6step ALIGN f    0.0 amp  12.0% | I 0.01 pk 0.05 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+  20.85 6step RUN   f    6.8 amp  22.0% | I 0.01 pk 0.09 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  21.35 6step RUN   f    9.7 amp  32.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  21.85 6step RUN   f   12.7 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  22.35 6step RUN   f   16.0 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  22.85 6step RUN   f   19.3 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  23.35 6step RUN   f   22.9 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  23.85 6step RUN   f   26.6 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  24.35 6step RUN   f   30.6 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  24.85 6step RUN   f   34.7 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  25.35 6step RUN   f   39.0 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  25.85 6step RUN   f   43.6 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  26.35 6step RUN   f   48.4 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  26.85 6step RUN   f   53.4 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  27.35 6step RUN   f   58.7 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  27.85 6step RUN   f   64.3 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  28.35 6step RUN   f   70.2 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  28.85 6step RUN   f   76.3 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  29.35 6step RUN   f   82.8 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  29.85 6step RUN   f   89.6 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  30.35 6step RUN   f   96.8 amp  40.0% | I 0.01 pk 0.09 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  30.85 6step RUN   f  104.3 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  31.35 6step RUN   f  112.2 amp  40.0% | I 0.01 pk 0.09 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  31.85 6step RUN   f  120.6 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  32.35 6step RUN   f  129.3 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  32.85 6step RUN   f  138.5 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  33.35 6step RUN   f  148.2 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  33.85 6step RUN   f  158.3 amp  40.0% | I 0.01 pk 0.11 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  34.35 6step RUN   f  169.0 amp  40.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+
+[stop] bridge off
+RESULT 6step: stopped (ESC), max f 179.7 Hz, max |I| sample 0.11 A
+ready
+
+===== 2026-11-18 23:36:30 printed motor, 68 ohm per lead, 24 V: max duty hold + 3 Hz spin
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 24
+vbus 24
+ok
+
+>>> set ampmax 95
+set ampmax 95
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 95
+amp 95
+ok
+
+>>> ilim 0.5
+ilim 0.5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 0.5 0
+accel 0.5 0
+ok
+
+>>> align 5000
+align 5000
+ok
+
+>>> f 3
+f 3
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 24.0 V ilim 0.50 A amp 95.0% (max 95%) f 3.0 Hz fstart 1.0 accel 0.5+0.00*f align 5000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.533 V out of range -> rebuilt from the other two phases
+start 6step: amp 95% f 3 Hz ilim 0.5 A
+  14.12 6step ALIGN f    0.0 amp  22.0% | I 0.01 pk 0.08 | rms A 0.02 B 0.02 C 0.00 | res -1.00 | flow   0% | ok
+  15.12 6step ALIGN f    0.0 amp  42.0% | I 0.01 pk 0.09 | rms A 0.02 B 0.02 C 0.00 | res -1.00 | flow   0% | ok
+  16.12 6step ALIGN f    0.0 amp  62.0% | I 0.01 pk 0.08 | rms A 0.02 B 0.02 C 0.00 | res -1.00 | flow   0% | ok
+  17.12 6step ALIGN f    0.0 amp  82.0% | I 0.01 pk 0.09 | rms A 0.02 B 0.02 C 0.00 | res -1.00 | flow   0% | ok
+  18.12 6step RUN   f    1.0 amp  95.0% | I 0.02 pk 0.10 | rms A 0.02 B 0.02 C 0.00 | res -1.00 | flow   0% | ok
+  19.12 6step RUN   f    1.5 amp  95.0% | I 0.01 pk 0.09 | rms A 0.02 B 0.02 C 0.01 | res -1.00 | flow   0% | ok
+  20.12 6step RUN   f    2.0 amp  95.0% | I 0.02 pk 0.11 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  21.12 6step RUN   f    2.5 amp  95.0% | I 0.01 pk 0.14 | rms A 0.02 B 0.02 C 0.01 | res -1.00 | flow   0% | ok
+  22.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.15 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  23.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.12 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  24.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.08 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  25.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.12 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  26.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.14 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  27.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.15 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  28.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.14 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  29.12 6step RUN   f    3.0 amp  95.0% | I 0.01 pk 0.13 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  30.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.13 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  31.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.14 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+  32.12 6step RUN   f    3.0 amp  95.0% | I 0.02 pk 0.11 | rms A 0.02 B 0.02 C 0.02 | res -1.00 | flow   0% | ok
+
+[stop] bridge off
+RESULT 6step: stopped (ESC), max f 3.0 Hz, max |I| sample 0.15 A
+ready
+
+===== 2026-11-18 23:45:32 printed motor, 18 ohm per lead, 24 V assumed: 50 % duty (4 W) hold + 3 Hz spin
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 24
+vbus 24
+ok
+
+>>> set ampmax 95
+set ampmax 95
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 50
+amp 50
+ok
+
+>>> ilim 0.5
+ilim 0.5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 0.5 0
+accel 0.5 0
+ok
+
+>>> align 5000
+align 5000
+ok
+
+>>> f 3
+f 3
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 24.0 V ilim 0.50 A amp 50.0% (max 95%) f 3.0 Hz fstart 1.0 accel 0.5+0.00*f align 5000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.476 V out of range -> rebuilt from the other two phases
+start 6step: amp 50% f 3 Hz ilim 0.5 A
+   5.44 6step ALIGN f    0.0 amp  22.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   6.44 6step ALIGN f    0.0 amp  42.0% | I 0.01 pk 0.05 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   7.44 6step ALIGN f    0.0 amp  50.0% | I 0.01 pk 0.05 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   8.44 6step ALIGN f    0.0 amp  50.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   9.44 6step RUN   f    1.0 amp  50.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+  10.44 6step RUN   f    1.5 amp  50.0% | I 0.02 pk 0.15 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  11.44 6step RUN   f    2.0 amp  50.0% | I 0.01 pk 0.16 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  12.44 6step RUN   f    2.5 amp  50.0% | I 0.01 pk 0.16 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  13.44 6step RUN   f    3.0 amp  50.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  14.44 6step RUN   f    3.0 amp  50.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  15.44 6step RUN   f    3.0 amp  50.0% | I 0.01 pk 0.13 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  16.44 6step RUN   f    3.0 amp  50.0% | I 0.01 pk 0.16 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  17.44 6step RUN   f    3.0 amp  50.0% | I 0.01 pk 0.10 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  18.44 6step RUN   f    3.0 amp  50.0% | I 0.01 pk 0.16 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+
+[stop] bridge off
+RESULT 6step: stopped (ESC), max f 3.0 Hz, max |I| sample 0.16 A
+ready
+
+===== 2026-11-18 23:46:24 printed motor, 18 ohm per lead, 24 V assumed: retry 50 % duty hold + 3 Hz spin
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 24
+vbus 24
+ok
+
+>>> set ampmax 95
+set ampmax 95
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 50
+amp 50
+ok
+
+>>> ilim 0.5
+ilim 0.5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 0.5 0
+accel 0.5 0
+ok
+
+>>> align 5000
+align 5000
+ok
+
+>>> f 3
+f 3
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 24.0 V ilim 0.50 A amp 50.0% (max 95%) f 3.0 Hz fstart 1.0 accel 0.5+0.00*f align 5000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.480 V out of range -> rebuilt from the other two phases
+start 6step: amp 50% f 3 Hz ilim 0.5 A
+
+===== 2026-11-18 23:46:37 printed motor, 18 ohm per lead, 12 V: 95 % duty hold + 3 Hz spin
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+RESULT 6step: stopped (stop command), max f 3.0 Hz, max |I| sample 0.13 A
+ready
+
+>>> vbus 12
+vbus 12
+ok
+
+>>> set ampmax 95
+set ampmax 95
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 95
+amp 95
+ok
+
+>>> ilim 0.5
+ilim 0.5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 0.5 0
+accel 0.5 0
+ok
+
+>>> align 5000
+align 5000
+ok
+
+>>> f 3
+f 3
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 12.0 V ilim 0.50 A amp 95.0% (max 95%) f 3.0 Hz fstart 1.0 accel 0.5+0.00*f align 5000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.468 V out of range -> rebuilt from the other two phases
+start 6step: amp 95% f 3 Hz ilim 0.5 A
+  70.60 6step ALIGN f    0.0 amp  22.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+  71.60 6step ALIGN f    0.0 amp  42.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+  72.60 6step ALIGN f    0.0 amp  62.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+  73.60 6step ALIGN f    0.0 amp  82.0% | I 0.01 pk 0.05 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+  74.60 6step RUN   f    1.0 amp  95.0% | I 0.01 pk 0.08 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+  75.60 6step RUN   f    1.5 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  76.60 6step RUN   f    2.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  77.60 6step RUN   f    2.5 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  78.60 6step RUN   f    3.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  79.60 6step RUN   f    3.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  80.60 6step RUN   f    3.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  81.60 6step RUN   f    3.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  82.60 6step RUN   f    3.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  83.60 6step RUN   f    3.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+
+[stop] bridge off
+RESULT 6step: stopped (ESC), max f 3.0 Hz, max |I| sample 0.08 A
+ready
+
+===== 2026-11-18 23:50:19 printed motor, 18 ohm per lead (35.6 ohm l-l measured): 95 % duty, slow walk then ramp to 3 Hz
+
+>>> stop
+
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+
+[console] STM3stop
+? (help)
+ok
+
+>>> set ampmax 95
+set ampmax 95
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 95
+amp 95
+ok
+
+>>> ilim 0.5
+ilim 0.5
+ok
+
+>>> fstart 0.111
+fstart 0.111
+ok
+
+>>> accel 0.3 0
+accel 0.3 0
+ok
+
+>>> align 5000
+align 5000
+ok
+
+>>> f 3
+f 3
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 9.0 V ilim 0.50 A amp 95.0% (max 95%) f 3.0 Hz fstart 0.1 accel 0.3+0.00*f align 5000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.484 V out of range -> rebuilt from the other two phases
+start 6step: amp 95% f 3 Hz ilim 0.5 A
+   5.78 6step ALIGN f    0.0 amp  22.0% | I 0.01 pk 0.05 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   6.78 6step ALIGN f    0.0 amp  42.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   7.78 6step ALIGN f    0.0 amp  62.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   8.78 6step ALIGN f    0.0 amp  82.0% | I 0.01 pk 0.05 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+
+===== 2026-11-18 23:51:13 printed motor, 18 ohm per lead: 95 % duty, ramp 1 -> 290 Hz el (2480 rpm)
+
+>>> stop
+
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+
+[console] STM32stop
+? (help)
+ok
+
+>>> set ampmax 95
+set ampmax 95
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 95
+amp 95
+ok
+
+>>> ilim 0.5
+ilim 0.5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 5 0.1
+accel 5 0.1
+ok
+
+>>> align 3000
+align 3000
+ok
+
+>>> f 290
+f 290
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 9.0 V ilim 0.50 A amp 95.0% (max 95%) f 290.0 Hz fstart 1.0 accel 5.0+0.10*f align 3000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.468 V out of range -> rebuilt from the other two phases
+start 6step: amp 95% f 290 Hz ilim 0.5 A
+   5.78 6step ALIGN f    0.0 amp  22.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   6.78 6step ALIGN f    0.0 amp  42.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   7.78 6step RUN   f    1.0 amp  62.0% | I 0.01 pk 0.04 | rms A 0.01 B 0.01 C 0.00 | res -1.00 | flow   0% | ok
+   8.78 6step RUN   f    6.4 amp  82.0% | I 0.01 pk 0.17 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+   9.78 6step RUN   f   12.3 amp  95.0% | I 0.01 pk 0.08 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  10.78 6step RUN   f   18.8 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  11.78 6step RUN   f   26.1 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  12.78 6step RUN   f   34.1 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  13.78 6step RUN   f   42.9 amp  95.0% | I 0.02 pk 0.07 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  14.78 6step RUN   f   52.7 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  15.78 6step RUN   f   63.5 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  16.78 6step RUN   f   75.5 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  17.78 6step RUN   f   88.7 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  18.78 6step RUN   f  103.2 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  19.78 6step RUN   f  119.4 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  20.78 6step RUN   f  137.2 amp  95.0% | I 0.02 pk 0.05 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  21.78 6step RUN   f  156.9 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  22.78 6step RUN   f  178.6 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  23.78 6step RUN   f  202.7 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  24.78 6step RUN   f  229.3 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  25.78 6step RUN   f  258.6 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  26.78 6step RUN   f  290.0 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  27.78 6step RUN   f  290.0 amp  95.0% | I 0.02 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+  28.78 6step RUN   f  290.0 amp  95.0% | I 0.01 pk 0.06 | rms A 0.01 B 0.01 C 0.01 | res -1.00 | flow   0% | ok
+
+[stop] bridge off
+RESULT 6step: stopped (ESC), max f 290.0 Hz, max |I| sample 0.17 A
+ready
+
+===== 2026-11-18 23:59:08 printed motor, NO series resistors, 12 V: amp 15 %, ilim 3 A, ramp 1 -> 290 Hz
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 12
+vbus 12
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 15
+amp 15
+ok
+
+>>> ilim 3
+ilim 3
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 5 0.1
+accel 5 0.1
+ok
+
+>>> align 1000
+align 1000
+ok
+
+>>> f 290
+f 290
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 12.0 V ilim 3.00 A amp 15.0% (max 60%) f 290.0 Hz fstart 1.0 accel 5.0+0.10*f align 1000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.478 V out of range -> rebuilt from the other two phases
+start 6step: amp 15% f 290 Hz ilim 3.0 A
+  16.24 6step ALIGN f    0.0 amp   7.8% | I 2.97 pk 3.10 | rms A 2.69 B 2.69 C 0.00 | res -1.00 | flow  94% | ok
+  17.24 6step RUN   f    6.4 amp   8.1% | I 3.00 pk 3.18 | rms A 2.53 B 2.47 C 2.32 | res -1.00 | flow 100% | ok
+  18.24 6step RUN   f   12.3 amp   8.3% | I 2.96 pk 3.17 | rms A 2.43 B 2.42 C 2.42 | res -1.00 | flow 100% | ok
+  19.24 6step RUN   f   18.8 amp   8.4% | I 2.87 pk 3.20 | rms A 2.41 B 2.43 C 2.38 | res -1.00 | flow 100% | ok
+  20.24 6step RUN   f   26.1 amp   8.6% | I 3.01 pk 3.24 | rms A 2.43 B 2.43 C 2.37 | res -1.00 | flow 100% | ok
+  21.24 6step RUN   f   34.1 amp   8.8% | I 2.98 pk 3.29 | rms A 2.43 B 2.44 C 2.39 | res -1.00 | flow 100% | ok
+  22.24 6step RUN   f   42.9 amp   8.7% | I 2.96 pk 3.36 | rms A 2.44 B 2.44 C 2.39 | res -1.00 | flow 100% | ok
+  23.24 6step RUN   f   52.7 amp   8.9% | I 2.98 pk 3.44 | rms A 2.45 B 2.45 C 2.40 | res -1.00 | flow 100% | ok
+  24.24 6step RUN   f   63.5 amp   9.3% | I 2.98 pk 3.48 | rms A 2.46 B 2.45 C 2.41 | res -1.00 | flow 100% | ok
+  25.24 6step RUN   f   75.4 amp   9.8% | I 2.97 pk 3.58 | rms A 2.46 B 2.45 C 2.41 | res -1.00 | flow 100% | ok
+  26.24 6step RUN   f   88.7 amp   9.5% | I 2.91 pk 3.62 | rms A 2.46 B 2.46 C 2.41 | res -1.00 | flow 100% | ok
+  27.24 6step RUN   f  103.2 amp  10.4% | I 2.97 pk 3.69 | rms A 2.47 B 2.46 C 2.42 | res -1.00 | flow 100% | ok
+  28.24 6step RUN   f  119.3 amp  10.9% | I 2.96 pk 3.75 | rms A 2.47 B 2.46 C 2.42 | res -1.00 | flow 100% | ok
+  29.24 6step RUN   f  137.2 amp  11.5% | I 2.98 pk 3.80 | rms A 2.47 B 2.47 C 2.42 | res -1.00 | flow 100% | ok
+  30.24 6step RUN   f  156.9 amp  12.5% | I 2.99 pk 3.85 | rms A 2.47 B 2.46 C 2.41 | res -1.00 | flow 100% | ok
+  31.24 6step RUN   f  178.6 amp  12.8% | I 2.97 pk 3.88 | rms A 2.47 B 2.47 C 2.42 | res -1.00 | flow 100% | ok
+  32.24 6step RUN   f  202.7 amp  14.8% | I 2.97 pk 4.06 | rms A 2.46 B 2.46 C 2.41 | res -1.00 | flow 100% | ok
+  33.24 6step RUN   f  229.2 amp   4.6% | I 1.20 pk 5.51 | rms A 2.45 B 2.44 C 2.38 | res -1.00 | flow  99% | ok
+  34.24 6step RUN   f  258.6 amp   8.0% | I 2.84 pk 4.61 | rms A 2.30 B 2.29 C 2.26 | res -1.00 | flow  99% | ok
+  35.24 6step RUN   f  290.0 amp   8.6% | I 3.00 pk 4.03 | rms A 2.45 B 2.43 C 2.40 | res -1.00 | flow 100% | ok
+  36.24 6step RUN   f  290.0 amp   8.4% | I 3.00 pk 3.37 | rms A 2.47 B 2.46 C 2.42 | res -1.00 | flow 100% | ok
+
+[stop] bridge off
+RESULT 6step: stopped (ESC), max f 290.0 Hz, max |I| sample 5.51 A
+ready
+
+===== 2026-11-19 00:00:14 printed motor, NO series resistors, 12 V: repeat amp 15 %, ilim 3 A, ramp 1 -> 290 Hz
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 12
+vbus 12
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 15
+amp 15
+ok
+
+>>> ilim 3
+ilim 3
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 5 0.1
+accel 5 0.1
+ok
+
+>>> align 1000
+align 1000
+ok
+
+>>> f 290
+f 290
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 12.0 V ilim 3.00 A amp 15.0% (max 60%) f 290.0 Hz fstart 1.0 accel 5.0+0.10*f align 1000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.479 V out of range -> rebuilt from the other two phases
+start 6step: amp 15% f 290 Hz ilim 3.0 A
+  81.87 6step RUN   f    1.0 amp   7.9% | I 3.00 pk 3.10 | rms A 2.69 B 2.69 C 0.00 | res -1.00 | flow  94% | ok
+  82.87 6step RUN   f    6.4 amp   8.0% | I 3.00 pk 3.16 | rms A 2.53 B 2.47 C 2.32 | res -1.00 | flow 100% | ok
+  83.87 6step RUN   f   12.3 amp   8.3% | I 2.96 pk 3.17 | rms A 2.43 B 2.42 C 2.42 | res -1.00 | flow 100% | ok
+  84.87 6step RUN   f   18.8 amp   8.3% | I 2.87 pk 3.18 | rms A 2.41 B 2.43 C 2.37 | res -1.00 | flow 100% | ok
+  85.87 6step RUN   f   26.1 amp   8.4% | I 2.99 pk 3.24 | rms A 2.43 B 2.43 C 2.37 | res -1.00 | flow 100% | ok
+  86.87 6step RUN   f   34.1 amp   8.7% | I 2.99 pk 3.30 | rms A 2.44 B 2.44 C 2.39 | res -1.00 | flow 100% | ok
+  87.87 6step RUN   f   42.9 amp   8.8% | I 2.96 pk 3.37 | rms A 2.45 B 2.44 C 2.40 | res -1.00 | flow 100% | ok
+  88.87 6step RUN   f   52.7 amp   8.9% | I 2.99 pk 3.43 | rms A 2.45 B 2.45 C 2.40 | res -1.00 | flow 100% | ok
+  89.87 6step RUN   f   63.5 amp   9.3% | I 3.00 pk 3.48 | rms A 2.46 B 2.45 C 2.41 | res -1.00 | flow 100% | ok
+  90.87 6step RUN   f   75.5 amp   9.8% | I 2.96 pk 3.54 | rms A 2.46 B 2.45 C 2.42 | res -1.00 | flow 100% | ok
+  91.87 6step RUN   f   88.7 amp   9.9% | I 3.00 pk 3.60 | rms A 2.46 B 2.45 C 2.41 | res -1.00 | flow 100% | ok
+  92.87 6step RUN   f  103.2 amp  10.2% | I 2.99 pk 3.67 | rms A 2.47 B 2.46 C 2.42 | res -1.00 | flow 100% | ok
+  93.87 6step RUN   f  119.4 amp  10.8% | I 2.97 pk 3.78 | rms A 2.47 B 2.46 C 2.42 | res -1.00 | flow 100% | ok
+  94.87 6step RUN   f  137.2 amp  11.8% | I 3.01 pk 3.82 | rms A 2.47 B 2.47 C 2.42 | res -1.00 | flow 100% | ok
+  95.87 6step RUN   f  156.9 amp  12.7% | I 2.95 pk 3.88 | rms A 2.47 B 2.46 C 2.41 | res -1.00 | flow 100% | ok
+  96.87 6step RUN   f  178.6 amp  13.4% | I 2.99 pk 3.90 | rms A 2.47 B 2.47 C 2.41 | res -1.00 | flow 100% | ok
+  97.87 6step RUN   f  202.7 amp  13.6% | I 2.99 pk 3.99 | rms A 2.47 B 2.47 C 2.41 | res -1.00 | flow 100% | ok
+  98.87 6step RUN   f  229.3 amp  15.0% | I 2.97 pk 4.08 | rms A 2.47 B 2.47 C 2.41 | res -1.00 | flow 100% | ok
+
+===== 2026-11-19 00:02:32 printed motor, NO series resistors, 12 V: repeat amp 15 %, ilim 3 A, ramp 1 -> 290 Hz
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 12
+vbus 12
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 15
+amp 15
+ok
+
+>>> ilim 3
+ilim 3
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 5 0.1
+accel 5 0.1
+ok
+
+>>> align 1000
+align 1000
+ok
+
+>>> f 290
+f 290
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 12.0 V ilim 3.00 A amp 15.0% (max 60%) f 290.0 Hz fstart 1.0 accel 5.0+0.10*f align 1000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.481 V out of range -> rebuilt from the other two phases
+start 6step: amp 15% f 290 Hz ilim 3.0 A
+ 220.06 6step RUN   f    1.0 amp   7.9% | I 2.99 pk 3.10 | rms A 2.69 B 2.69 C 0.00 | res -1.00 | flow  94% | ok
+ 221.06 6step RUN   f    6.4 amp   7.9% | I 2.98 pk 3.17 | rms A 2.53 B 2.47 C 2.32 | res -1.00 | flow 100% | ok
+ 222.06 6step RUN   f   12.3 amp   8.4% | I 3.00 pk 3.19 | rms A 2.43 B 2.42 C 2.42 | res -1.00 | flow 100% | ok
+ 223.06 6step RUN   f   18.8 amp   8.2% | I 2.85 pk 3.17 | rms A 2.40 B 2.43 C 2.36 | res -1.00 | flow 100% | ok
+ 224.06 6step RUN   f   26.1 amp   8.6% | I 3.00 pk 3.23 | rms A 2.43 B 2.43 C 2.37 | res -1.00 | flow 100% | ok
+ 225.06 6step RUN   f   34.1 amp   8.7% | I 2.97 pk 3.30 | rms A 2.43 B 2.44 C 2.39 | res -1.00 | flow 100% | ok
+ 226.06 6step RUN   f   42.9 amp   8.7% | I 2.96 pk 3.36 | rms A 2.44 B 2.44 C 2.39 | res -1.00 | flow 100% | ok
+ 227.06 6step RUN   f   52.7 amp   9.0% | I 2.97 pk 3.43 | rms A 2.45 B 2.45 C 2.40 | res -1.00 | flow 100% | ok
+ 228.06 6step RUN   f   63.5 amp   9.3% | I 3.03 pk 3.48 | rms A 2.46 B 2.45 C 2.41 | res -1.00 | flow 100% | ok
+ 229.06 6step RUN   f   75.5 amp   9.8% | I 2.95 pk 3.55 | rms A 2.46 B 2.45 C 2.41 | res -1.00 | flow 100% | ok
+ 230.06 6step RUN   f   88.7 amp  10.2% | I 2.98 pk 3.62 | rms A 2.46 B 2.45 C 2.41 | res -1.00 | flow 100% | ok
+ 231.06 6step RUN   f  103.2 amp  10.6% | I 2.97 pk 3.70 | rms A 2.47 B 2.46 C 2.42 | res -1.00 | flow 100% | ok
+ 232.06 6step RUN   f  119.4 amp  10.9% | I 2.98 pk 3.75 | rms A 2.47 B 2.47 C 2.42 | res -1.00 | flow 100% | ok
+ 233.06 6step RUN   f  137.2 amp  11.4% | I 2.98 pk 3.79 | rms A 2.47 B 2.47 C 2.42 | res -1.00 | flow 100% | ok
+ 234.06 6step RUN   f  156.9 amp  12.4% | I 2.95 pk 3.89 | rms A 2.47 B 2.46 C 2.42 | res -1.00 | flow 100% | ok
+ 235.06 6step RUN   f  178.6 amp  13.7% | I 2.97 pk 3.91 | rms A 2.47 B 2.47 C 2.41 | res -1.00 | flow 100% | ok
+ 236.06 6step RUN   f  202.7 amp  14.3% | I 2.98 pk 3.91 | rms A 2.47 B 2.47 C 2.41 | res -1.00 | flow 100% | ok
+ 237.06 6step RUN   f  229.3 amp  14.8% | I 2.97 pk 3.90 | rms A 2.48 B 2.47 C 2.41 | res -1.00 | flow 100% | ok
+ 238.06 6step RUN   f  258.6 amp   7.1% | I 2.97 pk 5.81 | rms A 2.34 B 2.33 C 2.28 | res -1.00 | flow  98% | ok
+ 239.06 6step RUN   f  290.0 amp   8.4% | I 3.04 pk 4.72 | rms A 2.43 B 2.41 C 2.38 | res -1.00 | flow 100% | ok
+ 240.06 6step RUN   f  290.0 amp   8.4% | I 2.94 pk 3.83 | rms A 2.46 B 2.44 C 2.41 | res -1.00 | flow 100% | ok
+
+[stop] bridge off
+RESULT 6step: stopped (ESC), max f 290.0 Hz, max |I| sample 5.81 A
+ready
+
+===== 2026-11-19 00:03:51 printed motor, NO series resistors, 12 V: amp 30 %, ilim 5 A, ramp 1 -> 290 Hz
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 12
+vbus 12
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 30
+amp 30
+ok
+
+>>> ilim 5
+ilim 5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 5 0.1
+accel 5 0.1
+ok
+
+>>> align 1000
+align 1000
+ok
+
+>>> f 290
+f 290
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 12.0 V ilim 4.50 A amp 30.0% (max 60%) f 290.0 Hz fstart 1.0 accel 5.0+0.10*f align 1000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+[stop] bridge off
+
+===== 2026-11-19 00:04:04 printed motor, NO series resistors, 12 V: amp 30 %, ilim 4.5 A, ramp 1 -> 290 Hz
+
+>>> stop
+
+[console] STM32G431 test_08_drive_lab, built Nov 18 2026 02:14:50. 'dfu' = bootloader, Ctrl-C/ESC = bridge off.
+stop
+ok
+
+>>> vbus 12
+vbus 12
+ok
+
+>>> mode 6step
+mode 6step
+mode 6step
+ok
+
+>>> amp 30
+amp 30
+ok
+
+>>> ilim 4.5
+ilim 4.5
+ok
+
+>>> fstart 1
+fstart 1
+ok
+
+>>> accel 5 0.1
+accel 5 0.1
+ok
+
+>>> align 1000
+align 1000
+ok
+
+>>> f 290
+f 290
+ok
+
+>>> log 1000
+log 1000
+ok
+
+>>> params
+params
+vbus 12.0 V ilim 4.50 A amp 30.0% (max 60%) f 290.0 Hz fstart 1.0 accel 5.0+0.10*f align 1000 ms
+R 0.0000 ohm L 0.0 uH lam 0.00000 bw 400 Hz ifa 1.50 A fsw 35.0 Hz kps 0.010 kis 0.050 dtc 1 focmod dpwm mode 6step
+ok
+
+>>> start
+start
+CSA: SOB offset 0.478 V out of range -> rebuilt from the other two phases
+start 6step: amp 30% f 290 Hz ilim 4.5 A
+ 312.01 6step RUN   f    1.0 amp  11.7% | I 4.48 pk 4.63 | rms A 3.76 B 3.76 C 0.00 | res -1.00 | flow  94% | ok
+ 313.01 6step RUN   f    6.4 amp  12.0% | I 4.50 pk 4.66 | rms A 3.79 B 3.71 C 3.47 | res -1.00 | flow 100% | ok
+ 314.01 6step RUN   f   12.3 amp  12.5% | I 4.42 pk 4.66 | rms A 3.65 B 3.63 C 3.62 | res -1.00 | flow 100% | ok
+ 315.01 6step RUN   f   18.8 amp  12.4% | I 4.33 pk 4.67 | rms A 3.63 B 3.65 C 3.54 | res -1.00 | flow 100% | ok
+ 316.01 6step RUN   f   26.1 amp  12.6% | I 4.44 pk 4.73 | rms A 3.66 B 3.66 C 3.55 | res -1.00 | flow 100% | ok
+ 317.01 6step RUN   f   34.1 amp  12.9% | I 4.44 pk 4.79 | rms A 3.67 B 3.67 C 3.58 | res -1.00 | flow 100% | ok
+ 318.01 6step RUN   f   42.9 amp  13.0% | I 4.44 pk 4.87 | rms A 3.69 B 3.67 C 3.59 | res -1.00 | flow 100% | ok
+ 319.01 6step RUN   f   52.7 amp  13.4% | I 4.47 pk 4.91 | rms A 3.69 B 3.68 C 3.60 | res -1.00 | flow 100% | ok
+ 320.01 6step RUN   f   63.5 amp  13.8% | I 4.51 pk 4.98 | rms A 3.69 B 3.68 C 3.60 | res -1.00 | flow 100% | ok
+ 321.01 6step RUN   f   75.5 amp  14.0% | I 4.44 pk 5.05 | rms A 3.69 B 3.68 C 3.61 | res -1.00 | flow 100% | ok
+ 322.01 6step RUN   f   88.7 amp  14.3% | I 4.44 pk 5.13 | rms A 3.70 B 3.68 C 3.61 | res -1.00 | flow 100% | ok
+ 323.01 6step RUN   f  103.2 amp  14.7% | I 4.48 pk 5.18 | rms A 3.70 B 3.68 C 3.62 | res -1.00 | flow 100% | ok
+ 324.01 6step RUN   f  119.4 amp  15.1% | I 4.47 pk 5.30 | rms A 3.70 B 3.69 C 3.62 | res -1.00 | flow 100% | ok
+ 325.01 6step RUN   f  137.2 amp  16.0% | I 4.49 pk 5.31 | rms A 3.71 B 3.69 C 3.62 | res -1.00 | flow 100% | ok
+ 326.01 6step RUN   f  156.9 amp  16.7% | I 4.40 pk 5.42 | rms A 3.70 B 3.69 C 3.63 | res -1.00 | flow 100% | ok
+ 327.01 6step RUN   f  178.6 amp  17.1% | I 4.50 pk 5.51 | rms A 3.70 B 3.69 C 3.63 | res -1.00 | flow 100% | ok
+ 328.01 6step RUN   f  202.7 amp  18.2% | I 4.42 pk 5.61 | rms A 3.70 B 3.68 C 3.62 | res -1.00 | flow 100% | ok
+ 329.01 6step RUN   f  229.3 amp  16.8% | I 4.39 pk 5.92 | rms A 3.67 B 3.65 C 3.59 | res -1.00 | flow 100% | ok
+ 330.01 6step RUN   f  258.6 amp  21.0% | I 4.73 pk 6.23 | rms A 3.37 B 3.37 C 3.29 | res -1.00 | flow 100% | ok
+RESULT 6step: stopped (overcurrent), max f 264.6 Hz, max |I| sample 7.78 A
+ready
+
+[stop] bridge off

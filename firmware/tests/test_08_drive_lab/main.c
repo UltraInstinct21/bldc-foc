@@ -59,8 +59,13 @@ static const char *const k_mod[] = { "6step", "sine", "svpwm", "dpwm" };
 static float p_vbus     = 9.0f;
 static float p_ilim     = 2.0f;     /* A, phase peak                         */
 static float p_amp      = 40.0f;    /* %: 6step duty, else l-l peak / Vbus   */
+/* Ceiling for "amp". 60 % protects a low-resistance motor run without series
+ * resistors. With resistors in the motor leads the current is capped by them
+ * (and is invisible to the CSA sampling, see docs), so up to 95 % may be set
+ * explicitly with "set ampmax". */
+static float p_ampmax   = 60.0f;
 static float p_f        = 200.0f;   /* Hz electrical, open-loop target       */
-static float p_fstart   = 4.0f;
+static float p_fstart   = 4.0f;     /* "f"/"fstart" go down to 0.05 Hz: 3.3 s per 6-step step */
 static float p_acc0     = 5.0f;     /* Hz/s                                  */
 static float p_acc1     = 0.1f;     /* 1/s                                   */
 static uint32_t p_align = 500u;     /* ms                                    */
@@ -1140,14 +1145,15 @@ static void help(void)
            "  sl                           sensorless FOC (I/f start, observer, speed loop)\r\n"
            "  amp <%%> f <Hz> ilim <A> vbus <V> accel <a0> <a1> align <ms> fstart <Hz>\r\n"
            "  set R|L|lam|bw|ifa|fsw|kps|kis|dtc|focmod <value>   (L in uH)\r\n"
+           "  set ampmax <%%>               amp ceiling, default 60, up to 95 (series resistors only)\r\n"
            "  trace [n]                    last n samples before the last stop\r\n"
            "  log <ms> | params | help | dfu | ESC = stop\r\n");
 }
 
 static void params(void)
 {
-    printf("vbus %.1f V ilim %.2f A amp %.1f%% f %.1f Hz fstart %.1f accel %.1f+%.2f*f align %lu ms\r\n",
-           (double)p_vbus, (double)p_ilim, (double)p_amp, (double)p_f, (double)p_fstart,
+    printf("vbus %.1f V ilim %.2f A amp %.1f%% (max %.0f%%) f %.1f Hz fstart %.1f accel %.1f+%.2f*f align %lu ms\r\n",
+           (double)p_vbus, (double)p_ilim, (double)p_amp, (double)p_ampmax, (double)p_f, (double)p_fstart,
            (double)p_acc0, (double)p_acc1, (unsigned long)p_align);
     printf("R %.4f ohm L %.1f uH lam %.5f bw %.0f Hz ifa %.2f A fsw %.1f Hz kps %.3f kis %.3f dtc %u focmod %s mode %s\r\n",
            (double)p_R, (double)(p_L * 1e6f), (double)p_lam, (double)p_bw, (double)p_ifa,
@@ -1189,11 +1195,11 @@ static void command(char *line)
         else if (parse_mod(argv[1], &m)) { printf("unknown mode\r\n"); }
         else                             { s_mod = m; printf("mode %s\r\n", k_mod[m]); }
     }
-    else if (!strcmp(argv[0], "amp"))    { p_amp = clampf(ARGF(1), 0.0f, 60.0f); }
-    else if (!strcmp(argv[0], "f"))      { p_f = clampf(ARGF(1), 0.5f, 400.0f); }
+    else if (!strcmp(argv[0], "amp"))    { p_amp = clampf(ARGF(1), 0.0f, p_ampmax); }
+    else if (!strcmp(argv[0], "f"))      { p_f = clampf(ARGF(1), 0.05f, 400.0f); }
     else if (!strcmp(argv[0], "ilim"))   { p_ilim = clampf(ARGF(1), 0.2f, 4.5f); }
     else if (!strcmp(argv[0], "vbus"))   { p_vbus = clampf(ARGF(1), 4.5f, 30.0f); }
-    else if (!strcmp(argv[0], "fstart")) { p_fstart = clampf(ARGF(1), 0.5f, 50.0f); }
+    else if (!strcmp(argv[0], "fstart")) { p_fstart = clampf(ARGF(1), 0.05f, 50.0f); }
     else if (!strcmp(argv[0], "align"))  { p_align = (uint32_t)clampf(ARGF(1), 0.0f, 5000.0f); }
     else if (!strcmp(argv[0], "accel"))  { p_acc0 = ARGF(1); p_acc1 = ARGF(2); }
     else if (!strcmp(argv[0], "log"))    { p_log = (uint32_t)clampf(ARGF(1), 50.0f, 10000.0f); }
@@ -1211,6 +1217,7 @@ static void command(char *line)
         else if (!strcmp(k, "kis")) { p_kis = v; }
         else if (!strcmp(k, "dtc")) { p_dtc = (v != 0.0f) ? 1u : 0u; }
         else if (!strcmp(k, "pll")) { p_pll = clampf(v, 5.0f, 200.0f); }
+        else if (!strcmp(k, "ampmax")) { p_ampmax = clampf(v, 10.0f, 95.0f); p_amp = fminf(p_amp, p_ampmax); }
         else if (!strcmp(k, "idsl")) { p_idsl = clampf(v, -3.0f, 0.0f); }
         else if (!strcmp(k, "vrec")) { p_vrec = (uint8_t)clampf(v, 0.0f, 2.0f); }
         else if (!strcmp(k, "trdec")) { p_trdec = (uint32_t)clampf(v, 1.0f, 100.0f); }

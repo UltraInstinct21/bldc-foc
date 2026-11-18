@@ -13,6 +13,14 @@ do next.
 | Session transcript on the old laptop | `~/.claude/projects/-home-sarthi-Projects-bldc-foc/015c0b42-d4f5-45d3-ad99-d9f4b6129f17.jsonl` |
 | Board currently flashed with | `test_08_drive_lab` (idle until commanded) |
 
+> **Latest update (2026-11-19 ~00:10):** pins 35/36 grounded and working
+> (sine/SVPWM run, gain 0.15 V/A). SOC is fixed; **SOB (pin 39) is now open**
+> (firmware rebuilds it). Phase C high side looked fixed in the latest runs.
+> The user's **3D-printed 12N14P motor spins** on 12 V without series
+> resistors: 6-step to ~230–265 Hz el. (≈ 2,000–2,270 rpm) before losing sync.
+> Full write-up: [`docs/results/2026-11-19_rework_and_printed_motor.md`](docs/results/2026-11-19_rework_and_printed_motor.md).
+> Next for that motor: gentler ramp near the top (`accel 5 0.02`), see §3.5 there.
+
 > **Update, end of session (2026-11-18 ~02:30):** the DRV8316 fault in
 > section 3 was fixed by the user (driver OK, nFAULT 1654 µs after wake).
 > With pins 35 and 36 grounded: **sine and SVPWM now run** (to ~180 Hz el.),

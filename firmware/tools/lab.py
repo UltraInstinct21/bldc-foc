@@ -10,9 +10,20 @@ Steps (run in the order given):
     if         I/f (closed-loop current, open-loop angle) to 60 Hz, lambda
     sl         sensorless FOC: I/f start, handover, speed loop
     cmd:<text> send any console line, e.g. cmd:vbus 9  cmd:set focmod svpwm
+    check:<text>   send "params"; ABORT the remaining steps unless <text> is in
+               the reply (settings live in RAM and are lost on a board reset)
+    spin:<s>   "start" with the current settings, run up to <s> seconds, then
+               stop (ESC); ends early if the firmware stops by itself
 
 The board must already run test_08_drive_lab (make APP=test_08_drive_lab flash).
 ESC is sent on exit, so the bridge is always left off.
+
+Example (the printed-motor run of 2026-11-19, 12 V, no series resistors):
+
+    python3 tools/lab.py --log ../docs/results/run.log \
+        "cmd:mode 6step" "cmd:amp 30" "cmd:ilim 4.5" "cmd:fstart 1" \
+        "cmd:accel 5 0.1" "cmd:align 1000" "cmd:f 290" "cmd:log 1000" \
+        "check:amp 30.0%" "check:ilim 4.50" "check:f 290.0 Hz" spin:22
 """
 import argparse
 import fcntl
@@ -131,6 +142,18 @@ def main():
                     c.send(step.replace(":", " ")); c.wait(["ok"], 8)
                 elif step.startswith("cmd:"):
                     c.send(step[4:]); c.wait(["ok", "ready", "?"], 3)
+                elif step.startswith("check:"):
+                    want = step[6:]
+                    c.send("params"); c.wait(["ok"], 2)
+                    if want not in c.buf:
+                        print(f"\n*** check failed: '{want}' not in params; not running the remaining steps")
+                        break
+                elif step.startswith("spin:"):
+                    c.send("start")
+                    if c.wait(["RESULT", "refuse", "would not clear", "out of range"], float(step[5:])) is None:
+                        c.esc()
+                        c.wait(["RESULT"], 3)
+                    c.wait(["ready"], 2)
                 else:
                     print(f"unknown step {step}")
         finally:

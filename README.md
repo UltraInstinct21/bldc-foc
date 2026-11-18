@@ -63,6 +63,7 @@ See [`esp32/README.md`](esp32/README.md) for wiring and setup.
 - [`docs/hardware.md`](docs/hardware.md) - board, pin map, connectors, limitations
 - [`docs/motor.md`](docs/motor.md) - motor data and the constants derived from it
 - [`docs/trapezoidal.md`](docs/trapezoidal.md) - six-step commutation: principle, implementation, measurements, tuning
+- [`docs/results/`](docs/results/) - measured results: drive lab (pin 35 floating), pin 35/36 rework, 3D-printed motor
 - [`docs/control.md`](docs/control.md) - FOC implementation, tuning, sampling window
 - [`docs/bringup.md`](docs/bringup.md) - ordered test and calibration procedure
 - [`docs/esp32.md`](docs/esp32.md) - ESP32 WiFi bridge protocol, timing, and safety design
